@@ -143,3 +143,27 @@ check_args <- function(foreign_playlist_uri,
   
 }
 
+
+
+shuffle_pernamently <- function(playlist_id, authorization){
+  # Shuffle the order of the songs on a playlist
+  previous_tracks <- get_playlist_tracks(playlist_id = playlist_uri, 
+                                         authorization = access_token$credentials$access_token)
+  if (!inherits(previous_tracks, "data.frame")){
+    stop("not a data.frame")
+  }
+  
+  if(nrow(previous_tracks) ==0){
+    warning("No songs in playlist")
+    return(NULL)
+  }
+  
+  previous_tracks <- previous_tracks$track.uri
+  new_order <- sample(previous_tracks)
+  
+  truncate(playlist_uri, access_token)
+  add_tracks_to_playlist(playlist_uri, new_order, authorization = access_token)
+  
+  invisible(previous_tracks)
+}
+

@@ -113,4 +113,10 @@ change_playlist_details(
 #                       user_id = user_id)
 
 
+# Shuffle playlist ----
+
+playlist_uri <- "3z04SRqhVPAcU97TEHSioz"
+
+shuffle_pernamently(playlist_uri, access_token)
+
 
