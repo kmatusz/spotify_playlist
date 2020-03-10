@@ -119,4 +119,14 @@ playlist_uri <- "3z04SRqhVPAcU97TEHSioz"
 
 shuffle_pernamently(playlist_uri, access_token)
 
+# Union multiple playlists ----
+
+playlists_to_copy <- rep(playlist_uri, 3)
+union_playlists(playlists_to_copy, playlist_uri, access_token)
+
+# clean-up
+truncate(playlist_uri, access_token)
+
+
+
 

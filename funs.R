@@ -33,6 +33,30 @@ truncate <- function(playlist_id, authorization){
   invisible(previous_tracks_uris)
 }
 
+union_playlists <- function(foreign_playlist_uris,
+                            my_playlist_uri,
+                            authorization =
+                              spotifyr::get_spotify_authorization_code()) {
+  # Function copies speicified multiple playlists to one playlist created by the user 
+  # foreign_playlist_uris - from which to copy
+  # my_playlist_uri - use existing user playlist
+  # append - if true, append tracks from other playlist to existing playlist
+  # if false, truncate all songs and replace playlist details (description, name)
+  
+  if (length(foreign_playlist_uris) == 0){
+    stop("No playlists to copy from")
+  }
+  
+  for (i in 1:length(foreign_playlist_uris)){
+    fork_foreign_playlist(foreign_playlist_uris[i],
+                          my_playlist_uri,
+                          append = TRUE,
+                          authorization = access_token)
+  }
+  
+}
+
+
 fork_foreign_playlist <- function(foreign_playlist_uri,
                                   my_playlist_uri = NULL,
                                   append = FALSE,
@@ -49,7 +73,7 @@ fork_foreign_playlist <- function(foreign_playlist_uri,
              user_id)
   # Get details of foreign playlist - name, desc, tracks
   foreign_playlist_data <- get_playlist(
-    foreign_playlist,
+    foreign_playlist_uri,
     authorization = authorization$credentials$access_token ,
     fields = c("description", "name", "tracks.items.track.uri")
   )
