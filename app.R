@@ -53,7 +53,7 @@ ui <- navbarPage("Hello Spotify!",
                             sidebarPanel(actionButton("authorize", "Authorize")),
                             
                             # Main panel for displaying outputs ----
-                            mainPanel(DT::dataTableOutput("playlists"))
+                            mainPanel(DT::dataTableOutput("my_playlists"))
                           )))
 
 
@@ -61,10 +61,20 @@ server <- function(input, output) {
   r <- reactiveValues(AUTHORIZED = FALSE,
                       access_token = NULL)
   
-  output$playlists <- DT::renderDataTable({
+  output$my_playlists <- DT::renderDataTable({
     if (r$AUTHORIZED) {
       get_my_playlists(authorization = r$access_token,
-                       include_meta_info = F)
+                       include_meta_info = F) %>% 
+        as_tibble() -> my_playlists
+      
+      message(my_playlists)
+      my_playlists %>%
+        filter(owner.id == r$user_id) -> playlists_created_by_me
+      
+      
+      playlists_created_by_me %>%
+        select(name)
+      
     } else {
       NULL
     }
@@ -73,7 +83,6 @@ server <- function(input, output) {
   
   
   observeEvent(input$authorize, {
-    message("aaa")
     scopes_needed <- c(
       "playlist-read-private",
       "playlist-modify-public",
@@ -88,7 +97,7 @@ server <- function(input, output) {
     
     # Get user profile
     me <- get_my_profile(r$access_token)
-    user_id <- me$id
+    r$user_id <- me$id
     
     r$AUTHORIZED <- TRUE
   })
