@@ -191,3 +191,61 @@ shuffle_pernamently <- function(playlist_id, authorization){
   invisible(previous_tracks)
 }
 
+get_playlists_names_uri <- function(authorization, user_id, return_only_owned = TRUE){
+  # Returns a vector of playlists names. 
+  # browser()
+  get_my_playlists(authorization = authorization,
+                   include_meta_info = F) %>% 
+    as_tibble() -> my_playlists
+  
+  if(nrow(my_playlists) == 0){
+    warning("No playlists avaliable")
+    return(c())
+  }
+  
+  if (return_only_owned){
+    my_playlists %>%
+      filter(owner.id == user_id) -> playlists_created_by_me
+    setNames(playlists_created_by_me$id, playlists_created_by_me$name)
+    
+  } else {
+    setNames(my_playlists$id, my_playlists$name)
+  }
+
+}
+
+get_songs_from_playlist_to_display <- function(authorization, playlist_id){
+
+  tracks_from_playlist <- get_playlist_tracks(playlist_id = playlist_id, 
+                                              authorization = authorization$
+                                                credentials$access_token)
+  tracks_from_playlist <- as_tibble(tracks_from_playlist)
+  
+  if(nrow(tracks_from_playlist) == 0){
+    warning("No songs avaliable")
+    return(tibble(Name = character(), Artists = character()))
+  }
+  
+  interesting_cols <-
+    c(
+      "track.name",
+      "track.artists"
+      
+    )
+  
+  tracks_from_playlist_stripped <- tracks_from_playlist[interesting_cols]
+  
+  # Artist extraction as other column
+  collapse_sign <- ", "
+  
+  tracks_from_playlist_stripped$track.artists %>%
+    map_chr(function(x) paste0(x$name, collapse = collapse_sign)) -> coerced_artists
+  
+  tracks_from_playlist_stripped$artists_simple <- coerced_artists
+  
+  tracks_from_playlist_stripped$track.artists <- NULL
+  names(tracks_from_playlist_stripped) <- c("Name", "Artists")
+  
+  tracks_from_playlist_stripped
+}
+

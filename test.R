@@ -128,5 +128,11 @@ union_playlists(playlists_to_copy, playlist_uri, access_token)
 truncate(playlist_uri, access_token)
 
 
+# Get playlists names ----
+get_playlists_names_uri(authorization = access_token, user_id, return_only_owned = F)
+get_playlists_names_uri(authorization = access_token, user_id, return_only_owned = T)
 
 
+
+get_songs_from_playlist_to_display(authorization = access_token,
+                                   playlist_id = playlist_uri)
