@@ -12,7 +12,7 @@ ui <- navbarPage(
              sidebarPanel(
                "W tym widoku robimy akcje na poziomie
                                          konkretnych utworów (przesuwanie w playliście, usuwanie, kopiowanie itd.)",
-               actionButton("authorize", "Authorize"),
+               # actionButton("authorize", "Authorize"),
                uiOutput("dynamic_playlist_selector")
                # selectInput("playlist", "Która playlista?", c("A", "B"))
              ),
@@ -67,6 +67,17 @@ server <- function(input, output) {
                       access_token = NULL,
                       user_id = NULL)
   
+  showModal(modalDialog(
+    title = "Authorization",
+    "Welcome to advanced Spotify playlist manager. 
+    Click the button below to log in on your Spotify account.
+    Don't worry, we won't gather your password or any personal data.
+    ",
+    
+    easyClose = FALSE,
+    footer = actionButton("authorize", "Log in")
+  ))
+  
   observeEvent(input$authorize, {
     message("AUTHORIZATION STARTED")
     scopes_needed <- c(
@@ -86,6 +97,8 @@ server <- function(input, output) {
     r$user_id <- me$id
     
     r$AUTHORIZED <- TRUE
+    
+    removeModal()
     message("AUTHORIZATION ENDED")
   })
   
