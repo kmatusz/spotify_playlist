@@ -1,0 +1,138 @@
+---
+runtime: shiny
+output: html_document
+---
+```{r setup, include=FALSE}
+install.packages('wordcloud2')
+install.packages('hrbrthemes')
+install.packages('ggthemes')
+
+library(GGally)
+library(wordcloud2) 
+library(forcats)
+library(data.table)
+library(tidyverse)
+library(plotly)
+library(viridis)
+library(hrbrthemes)
+library(DT)
+library(ggthemes)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+summary(playlist_audio_features$danceability)
+```
+
+```{r, echo=FALSE}
+glimpse(playlist_audio_features)
+```
+
+# How many songs of that type do we have in our playlist
+
+```{r, echo=FALSE}
+  name <- playlist_audio_features %>%
+  group_by(playlist_name, track.name, track.album.name) %>%
+  dplyr::summarize(Total = n()) 
+datatable(name)
+```
+
+
+# How the popularities are distribuited
+Most songs has a popularity between 64 and 79
+
+```{r, echo=FALSE}
+library(dplyr)
+playlist_audio_features$track.popularity <- cut(playlist_audio_features$track.popularity, breaks = 5)
+playlist_audio_features %>%
+  ggplot( aes(x=track.popularity ))+
+  geom_bar(width=0.2) +
+  coord_flip() +
+  scale_x_discrete(name="Popularity")  + theme_gray() 
+```
+
+
+# How the energy are distribuited
+```{r, echo=FALSE}
+playlist_audio_features$energy <- cut(playlist_audio_features$energy, breaks = 10)
+playlist_audio_features %>%
+  ggplot( aes(x=energy ))+
+  geom_bar(width=0.2) +
+  coord_flip() +
+  scale_x_discrete(name="Energy")  + theme_gray() 
+```
+
+# How the song's lenght are distribuited
+Lets see the most commum lenght
+
+```{r, echo=FALSE}
+playlist_audio_features$track.duration_ms <- cut(playlist_audio_features$track.duration_ms, breaks = 10)
+playlist_audio_features %>%
+  ggplot( aes(x=track.duration_ms ))+
+  geom_bar(width=0.2) +
+  coord_flip() +
+  scale_x_discrete(name="Length")  + theme_gray() 
+```
+
+
+#Correlation between atribiutes of song 
+
+```{r}
+options(repr.plot.width = 20, repr.plot.height = 15)
+playlist_audio_features_sliced <- playlist_audio_features[, 6:16]
+corr <- cor(playlist_audio_features_sliced)
+
+num <- corrplot(corr, method = "number")
+```
+
+### Histogram for each features
+
+```{r}
+playlist_audio_features %>%
+  gather(Features, value, 6:16) %>%
+  ggplot(aes(x=value, fill=Features)) +
+  geom_histogram(colour="black", show.legend=FALSE) +
+  facet_wrap(~Features, scales="free_x") +
+  labs(x="Values", y="Frequency",
+       title="Song Features - Histograms") +
+  theme_bw()
+```
+```
+
+```{r}
+
+playlist_audio_features %>%
+  select(track.popularity, valence, speechiness, tempo, track.name, track.album.name) %>%
+  group_by(track.popularity)%>%
+  filter(!is.na(track.popularity)) %>%
+  filter(!is.na(valence))%>%
+  filter(!is.na(speechiness))%>%
+  filter(!is.na(tempo)) %>%
+  filter(!is.na(track.name))%>%
+  ggplot(mapping = aes(x = valence, y = track.popularity, size = tempo, color = track.album.name))+
+  facet_wrap(~track.name)+
+  geom_point()+
+  theme_minimal()
+
+```
+
+
+
+
+
+```{r, echo=FALSE}
+
+library(GGally)
+corr <- playlist_audio_features %>% 
+  select(-c(track.name, track.album.name,track.popularity ,energy, track.duration_ms  )) 
+ggpairs(corr, title="Correlogram of the Playlist") 
+```
