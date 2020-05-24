@@ -2,9 +2,11 @@ library(spotifyr)
 library(tidyverse)
 library(shiny)
 library(DT)
+library(sortable)
+library(shinythemes)
 source("funs.R", encoding = "UTF-8")
 
-ui <- navbarPage(
+ui <- navbarPage(theme = shinytheme("cerulean"),
   "Hello Spotify!",
   
   tabPanel("One playlist",
@@ -34,7 +36,10 @@ ui <- navbarPage(
                                        "
                ),
                DT::dataTableOutput("songs_from_selected_playlist"),
-               DT::dataTableOutput("my_playlists")
+               DT::dataTableOutput("my_playlists"),
+               actionButton("copy_songs", "Copy", class = "btn-primary"),
+               actionButton("delete_songs", "Delete", class = "btn-danger"),
+               actionButton("save_changes", "Save changes", class = "btn-success")
              )
            )),
   tabPanel(
@@ -49,13 +54,13 @@ ui <- navbarPage(
                "W tej zakładce można wykonywać akcje na playlistach.
                                          Po lewej stronie mogą być przyciski z akcjami,
                                          powinny być: scal playlisty, usuń kilka playlist naraz,
-                                         kopiuj playlistę od kogoś innego.
-                                         "
+                                         kopiuj playlistę od kogoś innego."
              ),
              mainPanel(
                "Tutaj będzie tabelka z playlistami.
                                       Playlisty nie stworzone przez użytkownika powinny być jakoś oddzielone -
-                                      - nie wiem czy lepiej w oddzielnej tabeli czy jakoś zaznaczyć."
+                                      - nie wiem czy lepiej w oddzielnej tabeli czy jakoś zaznaczyć.",
+               DT::dataTableOutput("all_playlist")
              )
            ))
 )
@@ -117,17 +122,23 @@ server <- function(input, output) {
     
   })
   
-  output$songs_from_selected_playlist <- DT::renderDataTable({
+  output$songs_from_selected_playlist <- DT::renderDataTable(server=FALSE,{
     if (!is.null(input$playlist_selector) && r$AUTHORIZED) {
       message(paste0(
         "Run rendering of songs for playlist: ",
         input$playlist_selector
       ))
       
-      get_songs_from_playlist_to_display(
+      DT::datatable(get_songs_from_playlist_to_display(
         authorization = r$access_token,
         playlist_id = input$playlist_selector
-      )
+      ),colnames = c(ID = 1),  # add the name 
+      extensions = c('RowReorder','Buttons','Select'),
+      selection = 'none',
+      options = list(order = list(list(0, 'asc')), rowReorder = TRUE,
+                     dom = 'Bfrtip', buttons = c('colvis','selectAll','selectNone', 'selectRows'),
+                     select = list(style = 'os', items = 'row'),
+                     rowId = 0))
       
       
     } else {
@@ -136,6 +147,27 @@ server <- function(input, output) {
     
   })
   
+### Buttons actions
+  
+
+# All playlist view ----
+  output$all_playlist <- DT::renderDataTable({
+    if (!is.null(input$playlist_selector) && r$AUTHORIZED) {
+      message(paste0(
+        "Run rendering of songs for playlist: ",
+        input$playlist_selector
+      ))
+      
+      DT::datatable(get_playlists_names_uri(r$access_token,
+                                            r$user_id,
+                                            return_only_owned = F))
+      
+      
+    } else {
+      NULL
+    }
+    
+  })
 }
 
 shiny::shinyApp(ui, server, options = list("port" = 1410))
