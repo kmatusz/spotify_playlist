@@ -23,14 +23,17 @@ source("funs.R")
 source("playlist_features_poc.R")
 ```
 
-```{r, echo=FALSE}
-summary(playlist_audio_features$danceability)
-```
+# Every column in a data frame
 
 ```{r, echo=FALSE}
 glimpse(playlist_audio_features)
 ```
 
+# Summary and Descriptive Statistics of songs atributes
+
+```{r, echo=FALSE}
+summary(playlist_audio_features_sliced)
+```
 # How many songs of that type do we have in our playlist
 
 ```{r, echo=FALSE}
@@ -78,7 +81,7 @@ playlist_audio_features %>%
 ```
 
 
-#Correlation between atribiutes of song 
+# Correlation between atribiutes of song 
 
 ```{r}
 options(repr.plot.width = 20, repr.plot.height = 15)
@@ -89,11 +92,11 @@ corr <- cor(playlist_audio_features_sliced)
 num <- corrplot(corr, method = "number")
 ```
 
-### Histogram for each features
+# Histogram for each features
 
 ```{r}
 playlist_audio_features_sliced %>%
-  gather(Features, value, 1:10) %>%
+  gather(Features, value, 0:10) %>%
   ggplot(aes(x=value, fill=Features)) +
   geom_histogram(colour="black", show.legend=FALSE) +
   facet_wrap(~Features, scales="free_x") +
