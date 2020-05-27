@@ -33,4 +33,10 @@ playlist_audio_features <- get_playlist_audio_features(playlist_username, playli
 
 playlist_audio_features 
 
+playlist_audio_features_sliced <- playlist_audio_features[, 6:16]
+playlist_audio_features_sliced <- playlist_audio_features_sliced[,-2]
+playlist_audio_features_sliced 
+
 # details of how to get artists names from nested format are in smell_tests.R file
+
+
