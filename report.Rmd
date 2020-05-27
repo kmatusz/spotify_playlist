@@ -93,7 +93,7 @@ num <- corrplot(corr, method = "number")
 
 ```{r}
 playlist_audio_features_sliced %>%
-  gather(Features, value, 0:10) %>%
+  gather(Features, value, 1:10) %>%
   ggplot(aes(x=value, fill=Features)) +
   geom_histogram(colour="black", show.legend=FALSE) +
   facet_wrap(~Features, scales="free_x") +

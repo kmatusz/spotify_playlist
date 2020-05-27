@@ -6,23 +6,24 @@ library(sortable)
 library(shinythemes)
 source("funs.R", encoding = "UTF-8")
 
-setwd('C:/Users/rsido/Desktop/spotify_playlist-master')
+# setwd('C:/Users/rsido/Desktop/spotify_playlist-master')
 
 ui <- navbarPage(theme = shinytheme("cerulean"),
-  "Hello Spotify!",
-  
-  tabPanel("One playlist",
-           sidebarLayout(
-             sidebarPanel(
-               "W tym widoku robimy akcje na poziomie
+                 "Hello Spotify!",
+                 
+                 
+                 tabPanel("One playlist",
+                          sidebarLayout(
+                            sidebarPanel(
+                              "W tym widoku robimy akcje na poziomie
                                          konkretnych utworów (przesuwanie w playliście, usuwanie, kopiowanie itd.)",
-               # actionButton("authorize", "Authorize"),
-               uiOutput("dynamic_playlist_selector")
-               # selectInput("playlist", "Która playlista?", c("A", "B"))
-             ),
-             mainPanel(
-               tags$div(
-                 "Poniżej będzie widok tabelki z utworami.\n
+                              # actionButton("authorize", "Authorize"),
+                              uiOutput("dynamic_playlist_selector")
+                              # selectInput("playlist", "Która playlista?", c("A", "B"))
+                            ),
+                            mainPanel(
+                              tags$div(
+                                "Poniżej będzie widok tabelki z utworami.\n
 
                                        Będzie się dało zaznaczyć kilka utworów.\n
                                        Po zaznaczeniu na dole pojawią się przyciski:\n
@@ -36,44 +37,44 @@ ui <- navbarPage(theme = shinytheme("cerulean"),
                                        Taki feature nice to have to coś w stylu rollback - cofnij ostatnio wysłane zmiany\n
 
                                        "
-               ),
-               DT::dataTableOutput("songs_from_selected_playlist"),
-               DT::dataTableOutput("my_playlists"),
-               actionButton("copy_songs", "Copy", class = "btn-primary"),
-               actionButton("delete_songs", "Delete", class = "btn-danger"),
-               actionButton("save_changes", "Save changes", class = "btn-success")
-             )
-           )),
-  tabPanel(
-    "Authorize",
-    "Nie wiem do końca jak rozwiązać autoryzację. Pewnie
+                              ),
+                              DT::dataTableOutput("songs_from_selected_playlist"),
+                              DT::dataTableOutput("my_playlists"),
+                              actionButton("copy_songs", "Copy", class = "btn-primary"),
+                              actionButton("delete_songs", "Delete", class = "btn-danger"),
+                              actionButton("save_changes", "Save changes", class = "btn-success")
+                            )
+                          )),
+                 tabPanel(
+                   "Authorize",
+                   "Nie wiem do końca jak rozwiązać autoryzację. Pewnie
                           można zrobić oddzielną zakładkę na której będzie wprowadzenie i guzik 'autoryzuj'
                           (jak w zakłądce TEST). Można też zrobić routing (jak w pythonie): https://github.com/Appsilon/shiny.router  ."
-  
-  ),
-  
-  tabPanel(
-    "Report",
-    "Here we can download report and main infotmation about our Spotify playlist",
-    
-    downloadButton("report", "Generate report")
-  ),
-  
-  tabPanel("All playlists",
-           sidebarLayout(
-             sidebarPanel(
-               "W tej zakładce można wykonywać akcje na playlistach.
+                   
+                 ),
+                 
+                 tabPanel(
+                   "Report",
+                   "Here we can download report and main infotmation about our Spotify playlist",
+                   
+                   downloadButton("report", "Generate report")
+                 ),
+                 
+                 tabPanel("All playlists",
+                          sidebarLayout(
+                            sidebarPanel(
+                              "W tej zakładce można wykonywać akcje na playlistach.
                                          Po lewej stronie mogą być przyciski z akcjami,
                                          powinny być: scal playlisty, usuń kilka playlist naraz,
                                          kopiuj playlistę od kogoś innego."
-             ),
-             mainPanel(
-               "Tutaj będzie tabelka z playlistami.
+                            ),
+                            mainPanel(
+                              "Tutaj będzie tabelka z playlistami.
                                       Playlisty nie stworzone przez użytkownika powinny być jakoś oddzielone -
                                       - nie wiem czy lepiej w oddzielnej tabeli czy jakoś zaznaczyć.",
-               DT::dataTableOutput("all_playlist")
-             )
-           ))
+                              DT::dataTableOutput("all_playlist")
+                            )
+                          ))
 )
 
 
@@ -123,16 +124,23 @@ server <- function(input, output) {
   output$report <- downloadHandler(
     filename = "report.html",
     content = function(file) {
-      tempReport <- file.path(tempdir(), "report.Rmd")
-      file.copy("report.Rmd", tempReport, overwrite = TRUE)
+      use_temp_folder <- FALSE
       
-      rmarkdown::render(tempReport, output_file = file,
+      if (use_temp_folder) {
+        tempReport <- file.path(tempdir(), "report.Rmd")
+        file.copy("report.Rmd", tempReport, overwrite = TRUE)
+        path_to_file <- tempReport
+      } else {
+        path_to_file <- "report.Rmd"
+      }
+      
+      rmarkdown::render(path_to_file, output_file = file,
                         params = params,
                         envir = new.env(parent = globalenv())
       )
     }
   )
-
+  
   
   # One playlist view ----
   output$dynamic_playlist_selector <- renderUI({
@@ -174,11 +182,11 @@ server <- function(input, output) {
     
   })
   
-### Buttons action
-
+  ### Buttons action
   
-
-# All playlist view ----
+  
+  
+  # All playlist view ----
   output$all_playlist <- DT::renderDataTable({
     if (!is.null(input$playlist_selector) && r$AUTHORIZED) {
       message(paste0(
