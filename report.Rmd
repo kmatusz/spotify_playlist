@@ -20,7 +20,15 @@ library(ggthemes)
 
 ```{r, echo=FALSE}
 source("funs.R")
-source("playlist_features_poc.R")
+
+# Check if markdown document is knitted from the app - if not, source playlist_features_poc.R to obtain features
+if(!exists('playlist_audio_features')){
+  # source("playlist_features_poc.R")
+  load('playlist_audio_features.Rdata')
+}
+
+playlist_audio_features_sliced <- playlist_audio_features[, 6:16]
+playlist_audio_features_sliced <- playlist_audio_features_sliced[,-2]
 ```
 
 # Every column in a data frame
@@ -85,8 +93,7 @@ playlist_audio_features %>%
 
 ```{r}
 options(repr.plot.width = 20, repr.plot.height = 15)
-playlist_audio_features_sliced <- playlist_audio_features[, 6:16]
-playlist_audio_features_sliced <- playlist_audio_features_sliced[,-2]
+
 corr <- cor(playlist_audio_features_sliced)
 
 num <- corrplot(corr, method = "number")
@@ -96,7 +103,7 @@ num <- corrplot(corr, method = "number")
 
 ```{r}
 playlist_audio_features_sliced %>%
-  gather(Features, value, 0:10) %>%
+  gather(Features, value, 1:10) %>%
   ggplot(aes(x=value, fill=Features)) +
   geom_histogram(colour="black", show.legend=FALSE) +
   facet_wrap(~Features, scales="free_x") +

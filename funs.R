@@ -249,3 +249,36 @@ get_songs_from_playlist_to_display <- function(authorization, playlist_id){
   tracks_from_playlist_stripped
 }
 
+
+
+get_audio_features_for_playlists <- function(authorization, playlist_id = NULL){
+  # obtain audio features for all playlists that logged user is observing/has created. 
+  # if playlist_id is passed, features are obtained for this playlist only.
+  
+  
+  observed_playlists <- get_my_playlists( authorization = authorization) %>%
+    select(name, owner.display_name, id)
+  
+  if(!is.null(playlist_id)){
+    observed_playlists <- observed_playlists %>% 
+      filter(id == playlist_id)
+  }
+  
+  
+  all_playlists_features <- vector('list', nrow(observed_playlists))
+  for (i in 1:nrow(observed_playlists)){
+    tryCatch({
+    all_playlists_features[[i]] <- get_playlist_audio_features(observed_playlists[i,2], 
+                                                               observed_playlists[i,3], 
+                                                               authorization = authorization$credentials$access_token)
+    }, error = function(e) {
+      message(paste0('Error during getting audio features for playlist with id: ', 
+                     observed_playlists[i,3]))
+    }
+    )
+    }
+  
+  all_playlists_features %>% 
+    bind_rows() 
+}
+

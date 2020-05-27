@@ -23,20 +23,16 @@ observed_playlists <- get_my_playlists( authorization = access_token) %>%
 
 observed_playlists
 
+
 # one has to pass username and playlist id 
 playlist_username <- 'spotify'
-# playlist_username <- 'Elo' - name of test user
+# playlist_username <- 'Elo'# - name of test user
 playlist_uris <- c('37i9dQZF1DX3rxVfibe1L0', '37i9dQZF1DXcF6B6QPhFDv')
 
 
-playlist_audio_features <- get_playlist_audio_features(playlist_username, playlist_uris, authorization = access_token$credentials$access_token)
+get_audio_features_for_playlists(access_token) -> playlist_audio_features
+# playlist_audio_features <- get_playlist_audio_features(playlist_username, playlist_uris, authorization = access_token$credentials$access_token)
 
-playlist_audio_features 
 
-playlist_audio_features_sliced <- playlist_audio_features[, 6:16]
-playlist_audio_features_sliced <- playlist_audio_features_sliced[,-2]
-playlist_audio_features_sliced 
-
-# details of how to get artists names from nested format are in smell_tests.R file
-
+save(playlist_audio_features, file = 'playlist_audio_features.Rdata')
 
