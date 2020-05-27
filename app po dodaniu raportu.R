@@ -5,6 +5,7 @@ library(DT)
 library(sortable)
 library(shinythemes)
 source("funs.R", encoding = "UTF-8")
+source("playlist_features_poc.R")
 
 # setwd('C:/Users/rsido/Desktop/spotify_playlist-master')
 
@@ -24,18 +25,15 @@ ui <- navbarPage(theme = shinytheme("cerulean"),
                             mainPanel(
                               tags$div(
                                 "Poniżej będzie widok tabelki z utworami.\n
-
                                        Będzie się dało zaznaczyć kilka utworów.\n
                                        Po zaznaczeniu na dole pojawią się przyciski:\n
                                        Kopiuj do...(po kliknięciu pojawia się lista playlist),\n
                                        Usuń.\n
                                        Jeżeli będzie zaznaczony tylko 1 utwór, \n
                                        pojawią się przyciski kopiuj, usuń, ale też przesuń w górę/w dół.\n
-
                                        Z perspektywy komunikacji z backendem powinien być przycisk w stylu 'commit',\n
                                        i dopiero po naciśnięciu wysyła się zmiany przez API.\n
                                        Taki feature nice to have to coś w stylu rollback - cofnij ostatnio wysłane zmiany\n
-
                                        "
                               ),
                               DT::dataTableOutput("songs_from_selected_playlist"),
@@ -52,6 +50,16 @@ ui <- navbarPage(theme = shinytheme("cerulean"),
                           (jak w zakłądce TEST). Można też zrobić routing (jak w pythonie): https://github.com/Appsilon/shiny.router  ."
                    
                  ),
+                 
+                 tabPanel(
+                   "Visualization",
+                   fluidPage(
+                     
+                     titlePanel("Visualization of song atributes from our playlist"),
+                     
+                     plotOutput("myPlot")
+                   )),
+             
                  
                  tabPanel(
                    "Report",
@@ -75,7 +83,8 @@ ui <- navbarPage(theme = shinytheme("cerulean"),
                               DT::dataTableOutput("all_playlist")
                             )
                           ))
-)
+                 )
+
 
 
 server <- function(input, output) {
@@ -141,7 +150,24 @@ server <- function(input, output) {
     }
   )
   
+  # Visualization of atributes
+
   
+  output$myPlot <- renderPlot({
+    
+    playlist_audio_features_sliced %>%
+      gather(Features, value, 0:10) %>%
+      ggplot(aes(x=value, fill=Features)) +
+      geom_histogram(colour="black", show.legend=FALSE) +
+      facet_wrap(~Features, scales="free_x") +
+      labs(x="Values", y="Frequency",
+           title="Song Features - Histograms") +
+      theme_bw()
+    
+  })
+
+
+
   # One playlist view ----
   output$dynamic_playlist_selector <- renderUI({
     if (r$AUTHORIZED) {
@@ -207,4 +233,3 @@ server <- function(input, output) {
 }
 
 shiny::shinyApp(ui, server, options = list("port" = 1410))
-
