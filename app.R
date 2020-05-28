@@ -44,22 +44,14 @@ ui <- navbarPage(
                actionButton("save_changes", "Save changes", class = "btn-success")
              )
            )),
-  tabPanel(
-    "Authorize",
-    "Nie wiem do końca jak rozwiązać autoryzację. Pewnie
-                          można zrobić oddzielną zakładkę na której będzie wprowadzenie i guzik 'autoryzuj'
-                          (jak w zakłądce TEST). Można też zrobić routing (jak w pythonie): https://github.com/Appsilon/shiny.router  ."
-    
-  ),
   
   tabPanel(
     "Visualization",
     fluidPage(
       titlePanel("Visualization of song atributes from our playlist"),
-      
+      uiOutput("report_dynamic_playlist_selector"),
       plotOutput("myPlot"),
-      
-      downloadButton("report", "Generate report")
+      uiOutput('dynamic_report_download')
     )
   ),
   
@@ -128,8 +120,87 @@ server <- function(input, output) {
     message("AUTHORIZATION ENDED")
   })
   
-  #Report of playlist
+  # Visualisation tab -----
   
+  # select for currently shown playlist
+  output$report_dynamic_playlist_selector <- renderUI({
+    if (r$AUTHORIZED) {
+      selectizeInput(
+        "report_playlist_selector",
+        label = "Choose playlist for which you want to see the visualisation",
+        # I couldn't set it as NA or NULL, as javascript is converting these to character "NA"
+        choices = c(
+          c('Select playlist' = 'NOT_RUN'),
+          get_playlists_names_uri(r$access_token,
+                                  r$user_id,
+                                  return_only_owned = F)
+        )
+      )
+    }
+    
+  })
+  
+  report_playlist_selector <- reactive({
+    # encapsulate input, when equals to NOT_RUN the reactive becomes NULL
+    if (is.null(input$report_playlist_selector) || input$report_playlist_selector == 'NOT_RUN') {
+      return(NULL)
+    }
+    input$report_playlist_selector
+  })
+  
+  # my_playlists_audio_features - dynamic data frame
+  my_playlists_audio_features <- reactive({
+    if (is.null(report_playlist_selector())) {
+      return(NULL)
+    }
+    get_audio_features_for_playlists(r$access_token, playlist_id = report_playlist_selector())
+  })
+  
+  playlist_audio_features_sliced <- reactive({
+    if (is.null(my_playlists_audio_features())) {
+      return(NULL)
+    }
+    playlist_audio_features_sliced <-
+      my_playlists_audio_features()[, 6:16]
+    playlist_audio_features_sliced <-
+      playlist_audio_features_sliced[,-2]
+    
+    playlist_audio_features_sliced
+    
+  })
+  
+  
+  # Visualize atributes
+  
+  output$myPlot <- renderPlot({
+    
+    if (is.null(playlist_audio_features_sliced())) {
+      return(NULL)
+    }
+    
+    playlist_audio_features_sliced() %>%
+      gather(Features, value, 1:10) %>%
+      ggplot(aes(x = value, fill = Features)) +
+      geom_histogram(colour = "black", show.legend = FALSE) +
+      facet_wrap(~ Features, scales = "free_x") +
+      labs(x = "Values", y = "Frequency",
+           title = "Song Features - Histograms") +
+      theme_bw()
+    
+  })
+  
+  # download report
+  
+  # dynamic download button - 
+  # loads only if first information abut the playlists were loaded for viz in the app
+  output$dynamic_report_download <- renderUI({
+    if (is.null(my_playlists_audio_features())) {
+      return(NULL)
+    }
+    downloadButton("report", "Generate report")
+  })
+  
+  # actual content and knitting the report
   output$report <- downloadHandler(
     filename = "report.html",
     content = function(file) {
@@ -143,15 +214,9 @@ server <- function(input, output) {
         path_to_file <- "report.Rmd"
       }
       
-      if (is.null(r$my_playlists_audio_features)) {
-        get_audio_features_for_playlists(r$access_token) -> r$my_playlists_audio_features
-        message('Audio features for user playlists obtained')
-        
-      }
-      
       env_to_rmd <- new.env()
       env_to_rmd$playlist_audio_features <-
-        r$my_playlists_audio_features
+        my_playlists_audio_features()
       
       rmarkdown::render(
         path_to_file,
@@ -161,32 +226,6 @@ server <- function(input, output) {
       )
     }
   )
-  
-  # Visualization of atributes
-  
-  output$myPlot <- renderPlot({
-    if (is.null(r$my_playlists_audio_features)) {
-      message('generating features for plot')
-      get_audio_features_for_playlists(r$access_token) -> r$my_playlists_audio_features
-      message('Audio features obtained')
-    }
-    
-    
-    playlist_audio_features_sliced <-
-      r$my_playlists_audio_features[, 6:16]
-    playlist_audio_features_sliced <-
-      playlist_audio_features_sliced[, -2]
-    
-    playlist_audio_features_sliced %>%
-      gather(Features, value, 1:10) %>%
-      ggplot(aes(x = value, fill = Features)) +
-      geom_histogram(colour = "black", show.legend = FALSE) +
-      facet_wrap( ~ Features, scales = "free_x") +
-      labs(x = "Values", y = "Frequency",
-           title = "Song Features - Histograms") +
-      theme_bw()
-    
-  })
   
   
   
@@ -201,8 +240,6 @@ server <- function(input, output) {
                                           return_only_owned = F)
       )
     }
-    
-    
   })
   
   output$songs_from_selected_playlist <-
