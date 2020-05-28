@@ -2,6 +2,7 @@ library(spotifyr)
 library(tidyverse)
 library(shiny)
 library(DT)
+library(corrplot)
 library(sortable)
 library(shinythemes)
 source("funs.R", encoding = "UTF-8")
@@ -50,7 +51,8 @@ ui <- navbarPage(
     fluidPage(
       titlePanel("Visualization of song atributes from our playlist"),
       uiOutput("report_dynamic_playlist_selector"),
-      plotOutput("myPlot"),
+      plotOutput("myPlot1"),
+      plotOutput("myPlot2"),
       uiOutput('dynamic_report_download')
     )
   ),
@@ -169,10 +171,21 @@ server <- function(input, output) {
     
   })
   
+  playlist_audio_features <- reactive({
+    if (is.null(my_playlists_audio_features())) {
+      return(NULL)
+    }
+    playlist_audio_features<-
+      my_playlists_audio_features()
+    
+    playlist_audio_features
+    
+  })
+  
   
   # Visualize atributes
   
-  output$myPlot <- renderPlot({
+  output$myPlot1 <- renderPlot({
     
     if (is.null(playlist_audio_features_sliced())) {
       return(NULL)
@@ -186,6 +199,21 @@ server <- function(input, output) {
       labs(x = "Values", y = "Frequency",
            title = "Song Features - Histograms") +
       theme_bw()
+    
+  })
+  
+  output$myPlot2 <- renderPlot({
+    
+    if (is.null(playlist_audio_features())) {
+      return(NULL)
+    }
+    
+    playlist_audio_features() %>%
+      mutate(track.popularity = cut(playlist_audio_features()$track.popularity, breaks = 5)) %>%
+      ggplot( aes(x=track.popularity ))+
+      geom_bar(width=0.2) +
+      coord_flip() +
+      scale_x_discrete(name="Popularity")  + theme_gray() 
     
   })
   
