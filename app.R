@@ -8,7 +8,6 @@ library(shinythemes)
 source("funs.R", encoding = "UTF-8")
 # source("playlist_features_poc.R")
 
-# setwd('C:/Users/rsido/Desktop/spotify_playlist-master')
 
 ui <- navbarPage(
   theme = shinytheme("cerulean"),
@@ -53,6 +52,9 @@ ui <- navbarPage(
       uiOutput("report_dynamic_playlist_selector"),
       plotOutput("myPlot1"),
       plotOutput("myPlot2"),
+      plotOutput("myPlot3"),
+      plotOutput("myPlot4"),
+      plotOutput("myPlot5"),
       uiOutput('dynamic_report_download')
     )
   ),
@@ -183,6 +185,8 @@ server <- function(input, output) {
   })
   
   
+
+ 
   # Visualize atributes
   
   output$myPlot1 <- renderPlot({
@@ -202,6 +206,9 @@ server <- function(input, output) {
     
   })
   
+  
+  
+  
   output$myPlot2 <- renderPlot({
     
     if (is.null(playlist_audio_features())) {
@@ -213,9 +220,60 @@ server <- function(input, output) {
       ggplot( aes(x=track.popularity ))+
       geom_bar(width=0.2) +
       coord_flip() +
-      scale_x_discrete(name="Popularity")  + theme_gray() 
+      labs(x = "Values", y = "Popularity",
+           title = "Song Features - Popularity") + 
+      theme_bw()
     
   })
+  
+  output$myPlot3 <- renderPlot({
+    
+    if (is.null(playlist_audio_features())) {
+      return(NULL)
+    }
+    
+    playlist_audio_features() %>%
+      mutate(energy = cut(playlist_audio_features()$energy, breaks = 10)) %>%
+      ggplot( aes(x=energy ))+
+      geom_bar(width=0.2) +
+      coord_flip() +
+      labs(x = "Values", y = "Energy",
+           title = "Song Features - Energy") + 
+      theme_bw() 
+
+  })
+  
+  output$myPlot4 <- renderPlot({
+    
+    if (is.null(playlist_audio_features())) {
+      return(NULL)
+    }
+    
+    playlist_audio_features() %>%
+      mutate(track.duration_ms = cut(playlist_audio_features()$track.duration_ms, breaks = 10)) %>%
+      ggplot( aes(x=track.duration_ms ))+
+      geom_bar(width=0.2) +
+      coord_flip() +
+      labs(x = "Values", y = "Duration",
+           title = "Song Features - Duration") + 
+      theme_bw()  
+    
+  })
+  
+  output$myPlot5 <- renderPlot({
+    
+    if (is.null(playlist_audio_features_sliced())) {
+      return(NULL)
+    }
+    
+    options(repr.plot.width = 20, repr.plot.height = 15)
+    
+    corr <- cor(playlist_audio_features_sliced())
+    
+    num <- corrplot(corr, method = "number")
+    
+  })
+  
   
   # download report
   
