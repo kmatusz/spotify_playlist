@@ -18,23 +18,23 @@ ui <- navbarPage(
            sidebarLayout(
              sidebarPanel(
                "W tym widoku robimy akcje na poziomie
-                                         konkretnych utworów (przesuwanie w playliście, usuwanie, kopiowanie itd.)",
+                                         konkretnych utwor?w (przesuwanie w playli?cie, usuwanie, kopiowanie itd.)",
                # actionButton("authorize", "Authorize"),
                uiOutput("dynamic_playlist_selector")
-               # selectInput("playlist", "Która playlista?", c("A", "B"))
+               # selectInput("playlist", "Kt?ra playlista?", c("A", "B"))
              ),
              mainPanel(
                tags$div(
-                 "Poniżej będzie widok tabelki z utworami.\n
-                                       Będzie się dało zaznaczyć kilka utworów.\n
-                                       Po zaznaczeniu na dole pojawią się przyciski:\n
-                                       Kopiuj do...(po kliknięciu pojawia się lista playlist),\n
-                                       Usuń.\n
-                                       Jeżeli będzie zaznaczony tylko 1 utwór, \n
-                                       pojawią się przyciski kopiuj, usuń, ale też przesuń w górę/w dół.\n
-                                       Z perspektywy komunikacji z backendem powinien być przycisk w stylu 'commit',\n
-                                       i dopiero po naciśnięciu wysyła się zmiany przez API.\n
-                                       Taki feature nice to have to coś w stylu rollback - cofnij ostatnio wysłane zmiany\n
+                 "Poni?ej b?dzie widok tabelki z utworami.\n
+                                       B?dzie si? da?o zaznaczy? kilka utwor?w.\n
+                                       Po zaznaczeniu na dole pojawi? si? przyciski:\n
+                                       Kopiuj do...(po klikni?ciu pojawia si? lista playlist),\n
+                                       Usu?.\n
+                                       Je?eli b?dzie zaznaczony tylko 1 utw?r, \n
+                                       pojawi? si? przyciski kopiuj, usu?, ale te? przesu? w g?r?/w d??.\n
+                                       Z perspektywy komunikacji z backendem powinien by? przycisk w stylu 'commit',\n
+                                       i dopiero po naci?ni?ciu wysy?a si? zmiany przez API.\n
+                                       Taki feature nice to have to co? w stylu rollback - cofnij ostatnio wys?ane zmiany\n
                                        "
                ),
                DT::dataTableOutput("songs_from_selected_playlist"),
@@ -50,27 +50,29 @@ ui <- navbarPage(
     fluidPage(
       titlePanel("Visualization of song atributes from our playlist"),
       uiOutput("report_dynamic_playlist_selector"),
-      plotOutput("myPlot1"),
-      plotOutput("myPlot2"),
-      plotOutput("myPlot3"),
-      plotOutput("myPlot4"),
-      plotOutput("myPlot5"),
+      fluidRow(
+        column(4,plotOutput(outputId="myPlot1", width="500px",height="500px")),  
+        column(4,plotOutput(outputId="myPlot2", width="500px",height="500px")),
+        column(4,plotOutput(outputId="myPlot3", width="500px",height="500px")),
+        column(4,plotOutput(outputId="myPlot4", width="500px",height="500px")),
+        column(4,plotOutput(outputId="myPlot5", width="500px",height="500px")),
       uiOutput('dynamic_report_download')
+      )
     )
   ),
   
   tabPanel("All playlists",
            sidebarLayout(
              sidebarPanel(
-               "W tej zakładce można wykonywać akcje na playlistach.
-                                         Po lewej stronie mogą być przyciski z akcjami,
-                                         powinny być: scal playlisty, usuń kilka playlist naraz,
-                                         kopiuj playlistę od kogoś innego."
+               "W tej zak?adce mo?na wykonywa? akcje na playlistach.
+                                         Po lewej stronie mog? by? przyciski z akcjami,
+                                         powinny by?: scal playlisty, usu? kilka playlist naraz,
+                                         kopiuj playlist? od kogo? innego."
              ),
              mainPanel(
-               "Tutaj będzie tabelka z playlistami.
-                                      Playlisty nie stworzone przez użytkownika powinny być jakoś oddzielone -
-                                      - nie wiem czy lepiej w oddzielnej tabeli czy jakoś zaznaczyć.",
+               "Tutaj b?dzie tabelka z playlistami.
+                                      Playlisty nie stworzone przez u?ytkownika powinny by? jako? oddzielone -
+                                      - nie wiem czy lepiej w oddzielnej tabeli czy jako? zaznaczy?.",
                DT::dataTableOutput("all_playlist")
              )
            ))
