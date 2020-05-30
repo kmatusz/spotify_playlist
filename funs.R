@@ -10,8 +10,8 @@ truncate <- function(playlist_id, authorization){
   if (!inherits(authorization, "R6")) stop("authorization method is incorrect (not Token)")
   
   # 
-  previous_tracks <- get_playlist_tracks(playlist_id = playlist_id, 
-                      authorization = authorization$credentials$access_token)
+  previous_tracks <- get_all_playlist_tracks(playlist_id = playlist_id, 
+                                         authorization = authorization$credentials$access_token)
   
   if (length(previous_tracks) == 0){
     warning("There were no tracks on the playlist")
@@ -40,8 +40,6 @@ union_playlists <- function(foreign_playlist_uris,
   # Function copies speicified multiple playlists to one playlist created by the user 
   # foreign_playlist_uris - from which to copy
   # my_playlist_uri - use existing user playlist
-  # append - if true, append tracks from other playlist to existing playlist
-  # if false, truncate all songs and replace playlist details (description, name)
   
   if (length(foreign_playlist_uris) == 0){
     stop("No playlists to copy from")
@@ -51,7 +49,7 @@ union_playlists <- function(foreign_playlist_uris,
     fork_foreign_playlist(foreign_playlist_uris[i],
                           my_playlist_uri,
                           append = TRUE,
-                          authorization = access_token)
+                          authorization = authorization)
   }
   
 }
@@ -71,15 +69,14 @@ fork_foreign_playlist <- function(foreign_playlist_uri,
              my_playlist_uri,
              append,
              user_id)
+  
   # Get details of foreign playlist - name, desc, tracks
-  foreign_playlist_data <- get_playlist(
+  foreign_playlist_data <- get_all_playlist_tracks(
     foreign_playlist_uri,
-    authorization = authorization$credentials$access_token ,
-    fields = c("description", "name", "tracks.items.track.uri")
-  )
+    authorization = authorization$credentials$access_token)
   
   foreign_tracks_uris <-
-    foreign_playlist_data$tracks$items$track.uri
+    foreign_playlist_data$track.uri
   
   if (length(foreign_tracks_uris) == 0) {
     warning("No tracks on foreign playlist. Aborting")
@@ -105,7 +102,13 @@ fork_foreign_playlist <- function(foreign_playlist_uri,
   
   # if old and append
   if (append) {
-    add_tracks_to_playlist(my_playlist_uri, foreign_tracks_uris, authorization = authorization)
+    if (length(foreign_tracks_uris)>99){
+      uris_chunked <- split(foreign_tracks_uris, ceiling(seq_along(foreign_tracks_uris)/50))
+      for (chunk_of_uris in uris_chunked) {
+        add_tracks_to_playlist(my_playlist_uri, chunk_of_uris, authorization = authorization)
+        Sys.sleep(1)
+      }
+    }
     return(invisible(foreign_tracks_uris))
   }
   
@@ -171,7 +174,7 @@ check_args <- function(foreign_playlist_uri,
 
 shuffle_pernamently <- function(playlist_id, authorization){
   # Shuffle the order of the songs on a playlist
-  previous_tracks <- get_playlist_tracks(playlist_id = playlist_uri, 
+  previous_tracks <- get_all_playlist_tracks(playlist_id = playlist_uri, 
                                          authorization = access_token$credentials$access_token)
   if (!inherits(previous_tracks, "data.frame")){
     stop("not a data.frame")
@@ -193,7 +196,6 @@ shuffle_pernamently <- function(playlist_id, authorization){
 
 get_playlists_names_uri <- function(authorization, user_id, return_only_owned = TRUE){
   # Returns a vector of playlists names. 
-  # browser()
   get_my_playlists(authorization = authorization,
                    include_meta_info = F) %>% 
     as_tibble() -> my_playlists
@@ -211,12 +213,12 @@ get_playlists_names_uri <- function(authorization, user_id, return_only_owned = 
   } else {
     setNames(my_playlists$id, my_playlists$name)
   }
-
+  
 }
 
 get_songs_from_playlist_to_display <- function(authorization, playlist_id){
-
-  tracks_from_playlist <- get_playlist_tracks(playlist_id = playlist_id, 
+  
+  tracks_from_playlist <- get_all_playlist_tracks(playlist_id = playlist_id, 
                                               authorization = authorization$
                                                 credentials$access_token)
   tracks_from_playlist <- as_tibble(tracks_from_playlist)
@@ -268,17 +270,39 @@ get_audio_features_for_playlists <- function(authorization, playlist_id = NULL){
   all_playlists_features <- vector('list', nrow(observed_playlists))
   for (i in 1:nrow(observed_playlists)){
     tryCatch({
-    all_playlists_features[[i]] <- get_playlist_audio_features(observed_playlists[i,2], 
-                                                               observed_playlists[i,3], 
-                                                               authorization = authorization$credentials$access_token)
+      all_playlists_features[[i]] <- get_playlist_audio_features(observed_playlists[i,2], 
+                                                                 observed_playlists[i,3], 
+                                                                 authorization = authorization$credentials$access_token)
     }, error = function(e) {
       message(paste0('Error during getting audio features for playlist with id: ', 
                      observed_playlists[i,3]))
     }
     )
-    }
+  }
   
   all_playlists_features %>% 
     bind_rows() 
 }
+
+get_all_playlist_tracks <- function(playlist_id, authorization) {
+  # Wrapper for function get_playlist_tracks, to account for pagination of results 
+  # done by API
+  res <- get_playlist_tracks(playlist_id, 
+                             authorization = authorization, 
+                             offset = 0)
+  
+  for (i in 1:100){
+    tryCatch({
+      temp = get_playlist_tracks(playlist_id, 
+                                 authorization = authorization, 
+                                 offset = i*100)
+    })
+    
+    if (is.null(nrow(temp)) || nrow(temp)==0) break()
+    res = rbind(res, temp)
+  }
+  
+  res
+}
+
 

@@ -115,7 +115,7 @@ change_playlist_details(
 
 # Shuffle playlist ----
 
-playlist_uri <- "3z04SRqhVPAcU97TEHSioz"
+playlist_uri <- "5qTv1VVxfSMz3lsLZRzWAX"
 
 shuffle_pernamently(playlist_uri, access_token)
 
@@ -133,6 +133,5 @@ get_playlists_names_uri(authorization = access_token, user_id, return_only_owned
 get_playlists_names_uri(authorization = access_token, user_id, return_only_owned = T)
 
 
-
-get_songs_from_playlist_to_display(authorization = access_token,
-                                   playlist_id = playlist_uri)
+# get all songs - including pagination
+a <- get_all_playlist_tracks(playlist_uri, access_token$credentials$access_token)
