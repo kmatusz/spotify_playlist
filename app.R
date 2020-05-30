@@ -49,14 +49,18 @@ ui <- navbarPage(
     "Visualization",
     fluidPage(
       titlePanel("Visualization of song atributes from our playlist"),
-      uiOutput("report_dynamic_playlist_selector"),
       fluidRow(
-        column(4,plotOutput(outputId="myPlot1", width="500px",height="500px")),  
-        column(4,plotOutput(outputId="myPlot2", width="500px",height="500px")),
-        column(4,plotOutput(outputId="myPlot3", width="500px",height="500px")),
-        column(4,plotOutput(outputId="myPlot4", width="500px",height="500px")),
-        column(4,plotOutput(outputId="myPlot5", width="500px",height="500px")),
-      uiOutput('dynamic_report_download')
+        column(4, uiOutput("report_dynamic_playlist_selector")),
+        column(4, uiOutput('dynamic_report_download'))
+      ),
+      fluidRow(
+        column(6,plotOutput(outputId="myPlot1",height="500px")),
+        column(6,
+               fluidRow(plotOutput(outputId="myPlot2",height="250px")),
+               fluidRow(plotOutput(outputId="myPlot3",height="250px"))
+        ),
+        column(6,plotOutput(outputId="myPlot4",height="500px")),
+        column(6,plotOutput(outputId="myPlot5",height="500px"))
       )
     )
   ),
@@ -159,7 +163,9 @@ server <- function(input, output) {
     if (is.null(report_playlist_selector())) {
       return(NULL)
     }
+    withProgress(message = 'Obtaining songs features', value = 0, {
     get_audio_features_for_playlists(r$access_token, playlist_id = report_playlist_selector())
+    })
   })
   
   playlist_audio_features_sliced <- reactive({
@@ -187,8 +193,8 @@ server <- function(input, output) {
   })
   
   
-
- 
+  
+  
   # Visualize atributes
   
   output$myPlot1 <- renderPlot({
@@ -242,7 +248,7 @@ server <- function(input, output) {
       labs(x = "Values", y = "Energy",
            title = "Song Features - Energy") + 
       theme_bw() 
-
+    
   })
   
   output$myPlot4 <- renderPlot({
