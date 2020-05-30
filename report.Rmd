@@ -16,6 +16,7 @@ library(hrbrthemes)
 library(corrplot)
 library(DT)
 library(ggthemes)
+library(ggrepel)
 ```
 
 ```{r, echo=FALSE}
@@ -53,7 +54,6 @@ datatable(name)
 
 
 # How the popularities are distribuited
-Most songs has a popularity between 62.8 and 78.4
 
 ```{r, echo=FALSE}
 library(dplyr)
@@ -67,6 +67,7 @@ playlist_audio_features %>%
 
 
 # How the energy are distribuited
+
 ```{r, echo=FALSE}
 playlist_audio_features$energy <- cut(playlist_audio_features$energy, breaks = 10)
 playlist_audio_features %>%
@@ -111,6 +112,19 @@ playlist_audio_features_sliced %>%
        title="Song Features - Histograms") +
   theme_bw()
 ```
+
+
+```{r}
+plot_songs3 <- ggplot(playlist_audio_features, aes(x = track.name, 
+                                                   y = track.popularity)) +
+  geom_boxplot(aes(x = track.name, y = track.popularity)) +
+  geom_smooth() +
+  labs(x = "Track Name",
+       y = "Popularity",
+       title = "Distribution plot of Popularity") +
+  scale_color_brewer(palette = "Set3") +
+  theme(legend.position = "none") +
+  coord_flip()+
+  theme_bw()
+plot_songs3
 ```
-
-
