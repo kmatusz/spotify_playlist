@@ -106,11 +106,11 @@ change_playlist_details(
 )
 
 # Test new playlist creation - don't run too often !
-# fork_foreign_playlist(foreign_playlist,
-#                       # my_playlist,
-#                       # append = FALSE,
-#                       authorization = access_token,
-#                       user_id = user_id)
+fork_foreign_playlist(foreign_playlist,
+                      # my_playlist,
+                      # append = FALSE,
+                      authorization = access_token,
+                      user_id = user_id)
 
 
 # Shuffle playlist ----

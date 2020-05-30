@@ -75,6 +75,12 @@ fork_foreign_playlist <- function(foreign_playlist_uri,
     foreign_playlist_uri,
     authorization = authorization$credentials$access_token)
   
+  foreign_playlist_metadata <- get_playlist(
+    foreign_playlist_uri,
+    authorization = authorization$credentials$access_token ,
+    fields = c("description", "name")
+  )
+  
   foreign_tracks_uris <-
     foreign_playlist_data$track.uri
   
@@ -88,13 +94,21 @@ fork_foreign_playlist <- function(foreign_playlist_uri,
   # return new_playlist ur
   # if old playlist and append
   # add tracks
+
   if (is.null(my_playlist_uri)){
     created_playlist_info <- create_playlist(user_id = user_id, 
-                                             name = foreign_playlist_data$name,
-                                             description = foreign_playlist_data$description,
+                                             name = foreign_playlist_metadata$name,
+                                             description = foreign_playlist_metadata$description,
                                              authorization = authorization
     )
-    add_tracks_to_playlist(created_playlist_info$id, foreign_tracks_uris, authorization = authorization)
+    
+    uris_chunked <- split(foreign_tracks_uris, ceiling(seq_along(foreign_tracks_uris)/50))
+    for (chunk_of_uris in uris_chunked) {
+      # browser()
+      add_tracks_to_playlist(created_playlist_info$id, chunk_of_uris, authorization = authorization)
+      Sys.sleep(1)
+    }
+    # add_tracks_to_playlist(created_playlist_info$id, foreign_tracks_uris, authorization = authorization)
     
     return(invisible(foreign_tracks_uris))
   }
@@ -102,13 +116,11 @@ fork_foreign_playlist <- function(foreign_playlist_uri,
   
   # if old and append
   if (append) {
-    if (length(foreign_tracks_uris)>99){
       uris_chunked <- split(foreign_tracks_uris, ceiling(seq_along(foreign_tracks_uris)/50))
       for (chunk_of_uris in uris_chunked) {
         add_tracks_to_playlist(my_playlist_uri, chunk_of_uris, authorization = authorization)
         Sys.sleep(1)
       }
-    }
     return(invisible(foreign_tracks_uris))
   }
   
@@ -119,9 +131,14 @@ fork_foreign_playlist <- function(foreign_playlist_uri,
   # replace details
   if (!is.null(my_playlist_uri) && !append) {
     suppressWarnings(truncate(my_playlist, authorization))
-    add_tracks_to_playlist(my_playlist_uri,
-                           foreign_tracks_uris,
-                           authorization = authorization)
+    
+    # use pagination
+    uris_chunked <- split(foreign_tracks_uris, ceiling(seq_along(foreign_tracks_uris)/50))
+    for (chunk_of_uris in uris_chunked) {
+      add_tracks_to_playlist(my_playlist_uri, chunk_of_uris, authorization = authorization)
+      Sys.sleep(1)
+    }
+    
     change_playlist_details(
       my_playlist_uri,
       name = foreign_playlist_data$name,
@@ -189,7 +206,15 @@ shuffle_pernamently <- function(playlist_id, authorization){
   new_order <- sample(previous_tracks)
   
   truncate(playlist_uri, access_token)
-  add_tracks_to_playlist(playlist_uri, new_order, authorization = access_token)
+  
+  
+  # add_tracks_to_playlist(playlist_uri, new_order, authorization = access_token)
+  
+  uris_chunked <- split(new_order, ceiling(seq_along(new_order)/50))
+  for (chunk_of_uris in uris_chunked) {
+    add_tracks_to_playlist(my_playlist_uri, chunk_of_uris, authorization = authorization)
+    Sys.sleep(1)
+  }
   
   invisible(previous_tracks)
 }

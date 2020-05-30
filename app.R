@@ -154,7 +154,6 @@ server <- function(input, output, session) {
         )
       )
     }
-    
   })
   
   report_playlist_selector <- reactive({
@@ -198,8 +197,6 @@ server <- function(input, output, session) {
     playlist_audio_features
     
   })
-  
-  
   
   
   # Visualize atributes
@@ -388,7 +385,7 @@ server <- function(input, output, session) {
   # All playlist view ----
   connect_to_api <- TRUE
   
-  ap_all_playlists_my_df <- reactive({
+  ap_all_playlists <- reactive({
     if (!r$AUTHORIZED) {
       return(NULL)
     }
@@ -399,17 +396,23 @@ server <- function(input, output, session) {
     a <- get_my_playlists( authorization = r$access_token)
     
     a %>%
-      select(name, owner.display_name, tracks.total, description, id, owner.id) -> b
+      select(name, owner.display_name, tracks.total, description, id, owner.id)
+  })
+  
+  ap_all_playlists_my_df <- reactive({
+    if (!r$AUTHORIZED) {
+      return(NULL)
+    }
     
-    # my playlists
-    b %>%
+    ap_all_playlists() %>%
       filter(owner.id == r$user_id) %>%
-      select(-owner.display_name)
+      select(-owner.display_name, -owner.id)
   })
   
   output$ap_all_playlists_my <-
     DT::renderDataTable(server = TRUE, {
-      df <- ap_all_playlists_my_df()
+      df <- ap_all_playlists_my_df() %>%
+        select(-id)
       if (is.null(df)) {
         return(NULL)
       }
@@ -427,7 +430,7 @@ server <- function(input, output, session) {
         rowReorder = TRUE,
         dom = 'rti',
         # buttons = c('colvis', 'selectAll', 'selectNone', 'selectRows'),
-        select = list(style = 'os', items = 'row'),
+        # select = list(style = 'os', items = 'row'),
         # rowId = 0,
         pageLength= 5000,
         ordering= FALSE
@@ -437,7 +440,6 @@ server <- function(input, output, session) {
   
   ap_selected_my <- reactive({
     # id's of clicked (selected) playlists belonging to logged user
-    c('id1', 'id2')
     ap_all_playlists_my_df()[input$ap_all_playlists_my_rows_selected,]$id
   })
   
@@ -573,31 +575,58 @@ server <- function(input, output, session) {
     }
   })
   
-  # Foreign playlists
-  output$ap_all_playlists_followed <-
-    DT::renderDataTable(server = FALSE, {
+  observeEvent(ap_selected_followed(), {
+    if (length(ap_selected_followed()) == 0) {
+      shinyjs::disable("ap_fork_playlist")
       
-      if (!r$AUTHORIZED) {
-        return(NULL) 
-      }
-      a <- get_my_playlists( authorization = r$access_token)
+    } else {
+      shinyjs::enable("ap_fork_playlist")
       
-      a %>%
-        select(name, owner.display_name, tracks.total, description, id, owner.id) -> b
-      
-      # my playlists
-      b %>%
-        filter(owner.id != r$user_id) %>%
-        select(-owner.display_name) -> d
-      
-      create_datatable(d)
-    })
-  
-  observeEvent(input$ap_fork_playlist, {
-    message('AP: fork playlists clicked')
+    }
   })
   
   
+  # Foreign playlists
+  
+  ap_all_playlists_followed_df <- reactive({
+    if (!r$AUTHORIZED) {
+      return(NULL)
+    }
+    
+    ap_all_playlists() %>%
+      filter(owner.id != r$user_id) %>%
+      select(-owner.id)
+  })
+  
+  
+  output$ap_all_playlists_followed <-
+    DT::renderDataTable(server = TRUE, {
+      create_datatable(ap_all_playlists_followed_df() %>%
+                         select(-id))
+    })
+  
+  ap_selected_followed <- reactive({
+    # id's of clicked (selected) playlists belonging to logged user
+    ap_all_playlists_followed_df()[input$ap_all_playlists_followed_rows_selected,]$id
+  })
+  
+  observeEvent(input$ap_fork_playlist, {
+    message('AP: fork playlists clicked: ', paste0(ap_selected_followed(), collapse = " "))
+    # browser()
+    if (connect_to_api){
+      for (playlist_uri in ap_selected_followed()) {
+        fork_foreign_playlist(
+          playlist_uri,
+          authorization = r$access_token,
+          user_id = r$user_id)
+        refresh(refresh() + 1)
+        
+      }
+    }
+    
+    
+  })
+
   
 }
 
