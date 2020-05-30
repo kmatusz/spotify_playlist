@@ -5,37 +5,24 @@ library(DT)
 library(corrplot)
 library(sortable)
 library(shinythemes)
+library(shinyjs)
+
 source("funs.R", encoding = "UTF-8")
 # source("playlist_features_poc.R")
 
 
 ui <- navbarPage(
+  
   theme = shinytheme("cerulean"),
   "Hello Spotify!",
-  
-  
   tabPanel("One playlist",
            sidebarLayout(
              sidebarPanel(
-               "W tym widoku robimy akcje na poziomie
-                                         konkretnych utwor?w (przesuwanie w playli?cie, usuwanie, kopiowanie itd.)",
-               # actionButton("authorize", "Authorize"),
                uiOutput("dynamic_playlist_selector")
-               # selectInput("playlist", "Kt?ra playlista?", c("A", "B"))
              ),
              mainPanel(
                tags$div(
-                 "Poni?ej b?dzie widok tabelki z utworami.\n
-                                       B?dzie si? da?o zaznaczy? kilka utwor?w.\n
-                                       Po zaznaczeniu na dole pojawi? si? przyciski:\n
-                                       Kopiuj do...(po klikni?ciu pojawia si? lista playlist),\n
-                                       Usu?.\n
-                                       Je?eli b?dzie zaznaczony tylko 1 utw?r, \n
-                                       pojawi? si? przyciski kopiuj, usu?, ale te? przesu? w g?r?/w d??.\n
-                                       Z perspektywy komunikacji z backendem powinien by? przycisk w stylu 'commit',\n
-                                       i dopiero po naci?ni?ciu wysy?a si? zmiany przez API.\n
-                                       Taki feature nice to have to co? w stylu rollback - cofnij ostatnio wys?ane zmiany\n
-                                       "
+                 "Manage songs from one playlist"
                ),
                DT::dataTableOutput("songs_from_selected_playlist"),
                DT::dataTableOutput("my_playlists"),
@@ -44,6 +31,34 @@ ui <- navbarPage(
                actionButton("save_changes", "Save changes", class = "btn-success")
              )
            )),
+  tabPanel("All playlists",
+           shinyjs::useShinyjs(),
+           fluidPage(
+             fluidRow(
+               h4('My playlists')
+             ),
+             fluidRow(
+               column(4,
+                      fluidRow(actionButton("ap_copy_all_songs", "Copy all songs from selected playlists", class = "btn-primary"),style='padding:5px;'),
+                      fluidRow(actionButton("ap_delete_playlists", "Delete selected playlists", class = "btn-primary"),style='padding:5px;')
+               ),
+               column(6,
+                      DT::dataTableOutput("ap_all_playlists_my")
+               )
+             ),
+             fluidRow(
+               h4('Observed playlists')
+             ),
+             fluidRow(
+               column(4,
+                      fluidRow(actionButton("ap_fork_playlist", "Fork", class = "btn-primary")),
+               ),
+               column(6,
+                      DT::dataTableOutput("ap_all_playlists_followed")
+               )
+             ),
+           )
+  ),
   
   tabPanel(
     "Visualization",
@@ -63,28 +78,15 @@ ui <- navbarPage(
         column(6,plotOutput(outputId="myPlot5",height="500px"))
       )
     )
-  ),
+  )
   
-  tabPanel("All playlists",
-           sidebarLayout(
-             sidebarPanel(
-               "W tej zak?adce mo?na wykonywa? akcje na playlistach.
-                                         Po lewej stronie mog? by? przyciski z akcjami,
-                                         powinny by?: scal playlisty, usu? kilka playlist naraz,
-                                         kopiuj playlist? od kogo? innego."
-             ),
-             mainPanel(
-               "Tutaj b?dzie tabelka z playlistami.
-                                      Playlisty nie stworzone przez u?ytkownika powinny by? jako? oddzielone -
-                                      - nie wiem czy lepiej w oddzielnej tabeli czy jako? zaznaczy?.",
-               DT::dataTableOutput("all_playlist")
-             )
-           ))
+  
 )
 
 
 
-server <- function(input, output) {
+server <- function(input, output, session) {
+  
   # Authorization ----
   r <- reactiveValues(
     AUTHORIZED = FALSE,
@@ -100,7 +102,7 @@ server <- function(input, output) {
     Click the button below to log in on your Spotify account.
     Don't worry, we won't gather your password or any personal data.
     ",
-      
+
       easyClose = FALSE,
       footer = actionButton("authorize", "Log in")
     )
@@ -138,8 +140,9 @@ server <- function(input, output) {
       selectizeInput(
         "report_playlist_selector",
         label = "Choose playlist for which you want to see the visualisation",
-        # I couldn't set it as NA or NULL, as javascript is converting these to character "NA"
+        
         choices = c(
+          # I couldn't set it as NA or NULL, as javascript is converting these to character "NA"
           c('Select playlist' = 'NOT_RUN'),
           get_playlists_names_uri(r$access_token,
                                   r$user_id,
@@ -164,7 +167,7 @@ server <- function(input, output) {
       return(NULL)
     }
     withProgress(message = 'Obtaining songs features', value = 0, {
-    get_audio_features_for_playlists(r$access_token, playlist_id = report_playlist_selector())
+      get_audio_features_for_playlists(r$access_token, playlist_id = report_playlist_selector())
     })
   })
   
@@ -373,23 +376,158 @@ server <- function(input, output) {
   ### Buttons action
   
   # All playlist view ----
-  output$all_playlist <- DT::renderDataTable({
-    if (!is.null(input$playlist_selector) && r$AUTHORIZED) {
-      message(paste0(
-        "Run rendering of songs for playlist: ",
-        input$playlist_selector
-      ))
+  
+  output$ap_all_playlists_my <-
+    DT::renderDataTable(server = FALSE, {
       
-      DT::datatable(get_playlists_names_uri(r$access_token,
-                                            r$user_id,
-                                            return_only_owned = F))
+      if (!r$AUTHORIZED) {
+        return(NULL) 
+      }
+      a <- get_my_playlists( authorization = r$access_token)
       
+      a %>%
+        select(name, owner.display_name, tracks.total, description, id, owner.id) -> b
       
+      # my playlists
+      b %>%
+        filter(owner.id == r$user_id) %>%
+        select(-owner.display_name) -> d
+      
+      create_datatable(d)
+    })
+  
+  create_datatable <- function(df){
+    DT::datatable(
+      df,
+      colnames = c(ID = 1),
+      # add the name
+      extensions = c('RowReorder', 'Buttons', 'Select'),
+      selection = 'none',
+      options = list(
+        order = list(list(0, 'asc')),
+        rowReorder = TRUE,
+        dom = 'rti',
+        # buttons = c('colvis', 'selectAll', 'selectNone', 'selectRows'),
+        select = list(style = 'os', items = 'row'),
+        rowId = 0,
+        pageLength= 5000
+      )
+    )
+  }
+  
+  ap_selected_my <- reactive({
+    # id's of clicked (selected) playlists belonging to logged user
+    c('id1', 'id2')
+    # NULL
+  })
+  
+  # Deleting playlists
+  observeEvent(input$ap_delete_playlists, {
+    message('AP: delete playlists clicked')
+    showModal(modal_ap_delete_playlists())
+  })
+  
+  modal_ap_delete_playlists <- reactive({
+      modalDialog(
+        title = "Delete playlists",
+        HTML(
+          "Are you sure you want to delete selected playlists? This operation cannot be undone. <br/>",
+          paste0(ap_selected_my(), collapse = '<br/>')
+        ),
+        
+        easyClose = TRUE,
+        footer = tags$div(
+          actionButton("ap_delete_abort", "No, abort", class = "btn-success"),
+          actionButton("ap_delete_confirm", "Yes, delete", class = "btn-danger")
+        )
+      )
+  })
+  
+  observeEvent(input$ap_delete_confirm, {
+    message('Deleting playlists:', paste0(ap_selected_my(), collapse = " "))
+    removeModal()
+  })
+  
+  observeEvent(input$ap_delete_abort, {
+    message('Aborting')
+    removeModal()
+  })
+  
+  
+  # Copying songs from selected playlists
+  observeEvent(input$ap_copy_all_songs, {
+    message('AP: copy all songs from playlists clicked')
+    showModal(modal_ap_copy_all_songs())
+  })
+  
+  modal_ap_copy_all_songs <- reactive({
+    modalDialog(
+      title = "Copying song",
+      HTML(
+        "Select to which playlist you would like to copy following playlists songs? <br/>",
+        paste0(ap_selected_my(), collapse = '<br/>'),
+        "<br/>"
+      ),
+      selectizeInput(
+        "ap_add_playlist_selector",
+        label = "Choose playlist",
+        choices = get_playlists_names_uri(r$access_token,
+                                          r$user_id,
+                                          return_only_owned = T)
+      ),
+      
+      easyClose = TRUE,
+      footer = tags$div(
+        actionButton("ap_add_confirn", "Copy selected playlists contents", class = "btn-success")
+      )
+    )
+  })
+
+  
+  observeEvent(input$ap_add_confirn, {
+    message('Copying playlists contents from:', paste0(ap_selected_my(), collapse = " "), " to: ", input$ap_add_playlist_selector)
+    removeModal()
+  })
+  
+  # disable buttons
+  
+  observeEvent(ap_selected_my(), {
+    # TODO: not working yet
+    if (is.null(ap_selected_my())) {
+      shinyjs::disable("ap_delete_playlists")
     } else {
-      NULL
+      shinyjs::enable("ap_delete_playlists")
+      
     }
+  })
+  
+  # Foreign playlists
+  output$ap_all_playlists_followed <-
+    DT::renderDataTable(server = FALSE, {
+      
+      if (!r$AUTHORIZED) {
+        return(NULL) 
+      }
+      a <- get_my_playlists( authorization = r$access_token)
+      
+      a %>%
+        select(name, owner.display_name, tracks.total, description, id, owner.id) -> b
+      
+      # my playlists
+      b %>%
+        filter(owner.id != r$user_id) %>%
+        select(-owner.display_name) -> d
+      
+      create_datatable(d)
+    })
+  
+  observeEvent(input$ap_fork_playlist, {
+    message('AP: fork playlists clicked')
     
   })
+  
+  
+  
 }
 
 shiny::shinyApp(ui, server, options = list("port" = 1410))
