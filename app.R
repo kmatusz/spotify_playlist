@@ -62,7 +62,7 @@ ui <- navbarPage(
   ),
   
   tabPanel(
-    "Visualization",
+        "Visualization",
     fluidPage(
       titlePanel("Visualization of song atributes from our playlist"),
       fluidRow(
@@ -73,17 +73,21 @@ ui <- navbarPage(
         column(6,plotOutput(outputId="myPlot1",height="500px")),
         column(6,
                fluidRow(plotOutput(outputId="myPlot2",height="250px")),
-               fluidRow(plotOutput(outputId="myPlot3",height="250px")),
-               fluidRow(plotOutput(outputId="myPlot6",height="1000px"))
+               fluidRow(plotOutput(outputId="myPlot3",height="250px"))
         ),
-        column(6,plotOutput(outputId="myPlot4",height="500px")),
-        column(6,plotOutput(outputId="myPlot5",height="500px"))
+        column(5,plotOutput(outputId="myPlot6",height="1000px")),
+        column(5,
+               fluidRow(plotOutput(outputId="myPlot4",height="500px")),
+               fluidRow(plotOutput(outputId="myPlot5",height="500px"))
+        ),
+               
       )
     )
   )
   
   
 )
+
 
 
 
