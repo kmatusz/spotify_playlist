@@ -11,11 +11,11 @@ source("funs.R", encoding = "UTF-8")
 # source("playlist_features_poc.R")
 
 
+
 ui <- navbarPage(
   
   theme = shinytheme("cerulean"),
   "Hello Spotify!",
-  
   tabPanel("One playlist",
            sidebarLayout(
              sidebarPanel(
@@ -32,7 +32,6 @@ ui <- navbarPage(
                actionButton("save_changes", "Save changes", class = "btn-success")
              )
            )),
-  
   tabPanel("All playlists",
            shinyjs::useShinyjs(),
            fluidPage(
@@ -41,10 +40,8 @@ ui <- navbarPage(
              ),
              fluidRow(
                column(4,
-                      fluidRow("Click on some of the playlist on the right to highlight options"),
                       fluidRow(actionButton("ap_copy_all_songs", "Copy all songs from selected playlists", class = "btn-primary"),style='padding:5px;'),
-                      fluidRow(actionButton("ap_delete_playlists", "Delete selected playlists", class = "btn-primary"),style='padding:5px;'),
-                      fluidRow(actionButton("ap_new_playlist", "Create new playlist", class = "btn-primary"),style='padding:5px;')
+                      fluidRow(actionButton("ap_delete_playlists", "Delete selected playlists", class = "btn-primary"),style='padding:5px;')
                ),
                column(6,
                       DT::dataTableOutput("ap_all_playlists_my")
@@ -76,7 +73,8 @@ ui <- navbarPage(
         column(6,plotOutput(outputId="myPlot1",height="500px")),
         column(6,
                fluidRow(plotOutput(outputId="myPlot2",height="250px")),
-               fluidRow(plotOutput(outputId="myPlot3",height="250px"))
+               fluidRow(plotOutput(outputId="myPlot3",height="250px")),
+               fluidRow(plotOutput(outputId="myPlot6",height="1000px"))
         ),
         column(6,plotOutput(outputId="myPlot4",height="500px")),
         column(6,plotOutput(outputId="myPlot5",height="500px"))
@@ -89,7 +87,10 @@ ui <- navbarPage(
 
 
 
-server <- function(input, output, session) {
+
+
+
+server <- function(input, output, session) { 
   
   # Authorization ----
   r <- reactiveValues(
@@ -289,6 +290,23 @@ server <- function(input, output, session) {
     
   })
   
+  output$myPlot6 <- renderPlot({
+    
+    if (is.null(playlist_audio_features())) {
+      return(NULL)
+    }
+       
+      playlist_audio_features() %>%
+      mutate(track.popularity = cut(playlist_audio_features()$track.popularity, breaks = 5)) %>%
+      ggplot( aes(x = track.name, y = track.popularity)) +
+      geom_boxplot(aes(x = track.name, y = track.popularity)) +
+      labs(x = "Track Name",
+           y = "Popularity",
+                title = "Distribution plot of Popularity") +
+      coord_flip()+
+      theme_bw()
+      
+  })
   
   # download report
   
@@ -343,7 +361,6 @@ server <- function(input, output, session) {
     }
   })
   
-  
   output$songs_from_selected_playlist <-
     DT::renderDataTable(server = FALSE, {
       if (!is.null(input$playlist_selector) && r$AUTHORIZED) {
@@ -379,58 +396,43 @@ server <- function(input, output, session) {
     })
   
   ### Buttons action
-  refresh <- reactiveVal(0)
-  
-  observeEvent(refresh(), {
-    message('Refreshing tables')
-  })
   
   # All playlist view ----
-  connect_to_api <- TRUE
-  
-  ap_all_playlists_my_df <- reactive({
-    if (!r$AUTHORIZED) {
-      return(NULL)
-    }
-    # take dependency on global refresh variable - this is incremented every time some api
-    # modification call is run
-    refresh()
-    
-    a <- get_my_playlists( authorization = r$access_token)
-    
-    a %>%
-      select(name, owner.display_name, tracks.total, description, id, owner.id) -> b
-    
-    # my playlists
-    b %>%
-      filter(owner.id == r$user_id) %>%
-      select(-owner.display_name)
-  })
   
   output$ap_all_playlists_my <-
-    DT::renderDataTable(server = TRUE, {
-      df <- ap_all_playlists_my_df()
-      if (is.null(df)) {
-        return(NULL)
+    DT::renderDataTable(server = FALSE, {
+      
+      if (!r$AUTHORIZED) {
+        return(NULL) 
       }
-      create_datatable(df)
+      a <- get_my_playlists( authorization = r$access_token)
+      
+      a %>%
+        select(name, owner.display_name, tracks.total, description, id, owner.id) -> b
+      
+      # my playlists
+      b %>%
+        filter(owner.id == r$user_id) %>%
+        select(-owner.display_name) -> d
+      
+      create_datatable(d)
     })
   
   create_datatable <- function(df){
     DT::datatable(
       df,
-      # colnames = c(ID = 1),
-      # extensions = c('Buttons', 'Select'),
-      # selection = 'none',
+      colnames = c(ID = 1),
+      # add the name
+      extensions = c('RowReorder', 'Buttons', 'Select'),
+      selection = 'none',
       options = list(
         order = list(list(0, 'asc')),
         rowReorder = TRUE,
         dom = 'rti',
         # buttons = c('colvis', 'selectAll', 'selectNone', 'selectRows'),
         select = list(style = 'os', items = 'row'),
-        # rowId = 0,
-        pageLength= 5000,
-        ordering= FALSE
+        rowId = 0,
+        pageLength= 5000
       )
     )
   }
@@ -438,11 +440,7 @@ server <- function(input, output, session) {
   ap_selected_my <- reactive({
     # id's of clicked (selected) playlists belonging to logged user
     c('id1', 'id2')
-    ap_all_playlists_my_df()[input$ap_all_playlists_my_rows_selected,]$id
-  })
-  
-  observeEvent(input$ap_all_playlists_my_rows_selected, {
-    message(input$ap_all_playlists_my_rows_selected)
+    # NULL
   })
   
   # Deleting playlists
@@ -470,49 +468,11 @@ server <- function(input, output, session) {
   observeEvent(input$ap_delete_confirm, {
     message('Deleting playlists:', paste0(ap_selected_my(), collapse = " "))
     removeModal()
-    if (connect_to_api){
-      for (id in ap_selected_my()) {
-        unfollow_playlist(playlist_id = id, 
-                          authorization = r$access_token)
-      }
-    }
-    refresh(refresh() + 1)
   })
   
   observeEvent(input$ap_delete_abort, {
     message('Aborting')
     removeModal()
-  })
-  
-  # New playlist
-  observeEvent(input$ap_new_playlist, {
-    message('AP: create playlist clicked')
-    showModal(modal_ap_new_playlist())
-  })
-  
-  modal_ap_new_playlist <- reactive({
-    modalDialog(
-      title = "New playlist playlists",
-      HTML(
-        "Are you sure you want to delete selected playlists? This operation cannot be undone. <br/>",
-        paste0(ap_selected_my(), collapse = '<br/>')
-      ),
-      textInput("ap_new_playlist_name",label = 'Insert playlist name:'),
-      
-      easyClose = TRUE,
-      footer = tags$div(
-        actionButton("ap_create_new_confirm", "Create playlist", class = "btn-success")
-      )
-    )
-  })
-  
-  observeEvent(input$ap_create_new_confirm, {
-    message('AP: Creating playlist:', input$ap_new_playlist_name)
-    removeModal()
-    if (connect_to_api){
-      create_playlist(r$user_id, name = input$ap_new_playlist_name, authorization = r$access_token)
-    }
-    refresh(refresh() + 1)
   })
   
   
@@ -549,26 +509,16 @@ server <- function(input, output, session) {
   observeEvent(input$ap_add_confirn, {
     message('Copying playlists contents from:', paste0(ap_selected_my(), collapse = " "), " to: ", input$ap_add_playlist_selector)
     removeModal()
-    if (connect_to_api){
-      for (playlist_uri in ap_selected_my()){
-        union_playlists(playlist_uri, 
-                        input$ap_add_playlist_selector, 
-                        r$access_token)
-      }
-    }
-    refresh(refresh() + 1)
   })
   
   # disable buttons
   
   observeEvent(ap_selected_my(), {
-    if (length(ap_selected_my()) == 0) {
+    # TODO: not working yet
+    if (is.null(ap_selected_my())) {
       shinyjs::disable("ap_delete_playlists")
-      shinyjs::disable("ap_copy_all_songs")
-      
     } else {
       shinyjs::enable("ap_delete_playlists")
-      shinyjs::enable("ap_copy_all_songs")
       
     }
   })
@@ -595,10 +545,16 @@ server <- function(input, output, session) {
   
   observeEvent(input$ap_fork_playlist, {
     message('AP: fork playlists clicked')
+    
+  
+  
+
+  
   })
   
   
   
 }
+
 
 shiny::shinyApp(ui, server, options = list("port" = 1410))
