@@ -11,6 +11,7 @@ source("funs.R", encoding = "UTF-8")
 # source("playlist_features_poc.R")
 
 
+
 ui <- navbarPage(
   
   theme = shinytheme("cerulean"),
@@ -32,7 +33,6 @@ ui <- navbarPage(
                actionButton("save_changes", "Save changes", class = "btn-success")
              )
            )),
-  
   tabPanel("All playlists",
            shinyjs::useShinyjs(),
            fluidPage(
@@ -78,8 +78,12 @@ ui <- navbarPage(
                fluidRow(plotOutput(outputId="myPlot2",height="250px")),
                fluidRow(plotOutput(outputId="myPlot3",height="250px"))
         ),
-        column(6,plotOutput(outputId="myPlot4",height="500px")),
-        column(6,plotOutput(outputId="myPlot5",height="500px"))
+        column(6,plotOutput(outputId="myPlot6",height="1000px")),
+        column(6,
+               fluidRow(plotOutput(outputId="myPlot4",height="500px")),
+               fluidRow(plotOutput(outputId="myPlot5",height="500px"))
+        ),
+        
       )
     )
   )
@@ -154,6 +158,7 @@ server <- function(input, output, session) {
         )
       )
     }
+    
   })
   
   report_playlist_selector <- reactive({
@@ -286,6 +291,23 @@ server <- function(input, output, session) {
     
   })
   
+  output$myPlot6 <- renderPlot({
+    
+    if (is.null(playlist_audio_features())) {
+      return(NULL)
+    }
+    
+    playlist_audio_features() %>%
+      mutate(track.popularity = cut(playlist_audio_features()$track.popularity, breaks = 5)) %>%
+      ggplot( aes(x = track.name, y = track.popularity)) +
+      geom_boxplot(aes(x = track.name, y = track.popularity)) +
+      labs(x = "Track Name",
+           y = "Popularity",
+           title = "Distribution plot of Popularity") +
+      coord_flip()+
+      theme_bw()
+    
+  })
   
   # download report
   
@@ -626,7 +648,7 @@ server <- function(input, output, session) {
     
     
   })
-
+  
   
 }
 
