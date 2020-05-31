@@ -350,6 +350,7 @@ server <- function(input, output, session) {
   
   
   # One playlist view ----
+  
   output$dynamic_playlist_selector <- renderUI({
     if (r$AUTHORIZED) {
       selectizeInput(
@@ -362,6 +363,25 @@ server <- function(input, output, session) {
     }
   })
   
+  sp_all_tracks <- reactive({
+    if (!r$AUTHORIZED) {
+      return(NULL)
+    }
+    # take dependency on global refresh variable - this is incremented every time some api
+    # modification call is run
+    refresh()
+    
+    a <- get_songs_from_playlist_to_display(authorization = r$access_token,
+                                            playlist_id = input$playlist_selector)
+    
+  })
+  
+  sp_all_tracks_df <- reactive({
+    if (!r$AUTHORIZED) {
+      return(NULL)
+    }
+    sp_all_tracks()
+  })
   
   output$songs_from_selected_playlist <-
     DT::renderDataTable(server = FALSE, {
@@ -371,11 +391,8 @@ server <- function(input, output, session) {
           input$playlist_selector
         ))
         
-        DT::datatable(
-          get_songs_from_playlist_to_display(
-            authorization = r$access_token,
-            playlist_id = input$playlist_selector
-          ),
+        DT::datatable(sp_all_tracks_df()%>%
+                        select(!Track_uri),
           colnames = c(ID = 1),
           # add the name
           extensions = c('RowReorder', 'Buttons', 'Select'),
@@ -397,6 +414,66 @@ server <- function(input, output, session) {
       
     })
   
+  #Rows selector
+  sp_selected_my <- reactive({
+    # id's of clicked (selected) tracks belonging to logged user
+    sp_all_tracks_df()[input$songs_from_selected_playlist_rows_selected,]$Track_uri
+  })
+  
+  observeEvent(input$songs_from_selected_playlist_rows_selected, {
+    message(input$songs_from_selected_playlist_rows_selected)
+  })
+  
+  # Deleting tracks
+  observeEvent(input$delete_songs, {
+    message('SP: delete selected tracks clicked')
+    showModal(modal_sp_delete_tracks())
+  })
+  
+  modal_sp_delete_tracks <- reactive({
+    modalDialog(
+      title = "Delete tracks",
+      HTML(
+        "Are you sure you want to delete selected playlists? This operation cannot be undone. <br/>",
+        paste0(sp_selected_my(), collapse = '<br/>')
+      ),
+      
+      easyClose = TRUE,
+      footer = tags$div(
+        actionButton("sp_delete_abort", "No, abort", class = "btn-success"),
+        actionButton("sp_delete_confirm", "Yes, delete", class = "btn-danger")
+      )
+    )
+  })
+  
+  
+  observeEvent(input$sp_delete_confirm, {
+    message('Deleting tracks:', paste0(sp_selected_my(), collapse = " "))
+    removeModal()
+    if (connect_to_api){
+      for (uri in sp_selected_my()) {
+        remove_tracks_from_playlist(playlist_id = input$playlist_selector, 
+                                    uris=uri,
+                          authorization = r$access_token)
+      }
+    }
+    refresh(refresh() + 1)
+  })
+  
+  observeEvent(input$sp_delete_abort, {
+    message('Aborting')
+    removeModal()
+  })
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   ### Buttons action
   refresh <- reactiveVal(0)
   
@@ -404,6 +481,10 @@ server <- function(input, output, session) {
     message('Refreshing tables')
   })
   
+  
+  
+
+######################################################################
   # All playlist view ----
   connect_to_api <- TRUE
   
