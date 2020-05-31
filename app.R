@@ -465,10 +465,28 @@ server <- function(input, output, session) {
     removeModal()
   })
   
-  
-  
-  
-  
+  #Disable 'delete button if the selected playlist is a public playlist
+
+  public_playlist_button_disable <- reactive({
+    if (!r$AUTHORIZED) {
+      return(NULL)
+    }
+    refresh()
+    a <- input$playlist_selector
+  })
+
+  observeEvent(public_playlist_button_disable(), {
+    current = get_my_playlists( authorization = r$access_token) %>% filter(id == public_playlist_button_disable())
+    if (current$owner.id != r$user_id) {
+      shinyjs::disable("delete_songs")
+      shinyjs::disable("save_changes")
+
+    } else {
+      shinyjs::enable("delete_songs")
+      shinyjs::enable("save_changes")
+
+    }
+  })
   
   
   
