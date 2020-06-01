@@ -66,28 +66,30 @@ ui <- navbarPage(
   ),
   
   tabPanel(
-      "Visualization",
-      fluidPage(
-        titlePanel("Visualization of song atributes from our playlist"),
-        fluidRow(
-          column(4, uiOutput("report_dynamic_playlist_selector")),
-          column(4, uiOutput('dynamic_report_download'))
-        ),
-        fluidRow(
-          column(6,tabPanel("playlist_audio_features", DT::dataTableOutput("mytable1",height="500px")),
-          column(6,plotOutput(outputId="myPlot1", height="500px"))
-          ), 
-          column(5,plotOutput(outputId="myPlot2",height="500px")),
-          column(5,
-                 fluidRow(plotOutput(outputId="myPlot3",height="250px")),
-                 fluidRow(plotOutput(outputId="myPlot4",height="250px"))
-          ),
-          
+    "Visualization",
+    fluidPage(
+      titlePanel("Visualization of song atributes from our playlist"),
+      fluidRow(
+        column(4, uiOutput("report_dynamic_playlist_selector")),
+        column(4, uiOutput('dynamic_report_download'))
+      ),
+      fluidRow(
+        column(6,DT::dataTableOutput("mytable1",height="500px")),
+        column(6,plotOutput(outputId="myPlot2",height="500px"))
+      ),
+      fluidRow(
+        column(6,plotOutput(outputId="myPlot1", height="500px")),
+        column(6,
+               fluidRow(plotOutput(outputId="myPlot3",height="250px")),
+               fluidRow(plotOutput(outputId="myPlot4",height="250px"))
         )
       )
+      
     )
   )
-  
+)
+
+
   
 
 
