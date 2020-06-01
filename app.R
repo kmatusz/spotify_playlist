@@ -44,7 +44,8 @@ ui <- navbarPage(
                       fluidRow("Click on some of the playlist on the right to highlight options"),
                       fluidRow(actionButton("ap_copy_all_songs", "Copy all songs from selected playlists", class = "btn-primary"),style='padding:5px;'),
                       fluidRow(actionButton("ap_delete_playlists", "Delete selected playlists", class = "btn-primary"),style='padding:5px;'),
-                      fluidRow(actionButton("ap_new_playlist", "Create new playlist", class = "btn-primary"),style='padding:5px;')
+                      fluidRow(actionButton("ap_new_playlist", "Create new playlist", class = "btn-primary"),style='padding:5px;'),
+                      fluidRow(actionButton("ap_rename_playlist", "Rename own playlist", class = "btn-primary"),style='padding:5px;')
                ),
                column(6,
                       DT::dataTableOutput("ap_all_playlists_my")
@@ -392,7 +393,7 @@ server <- function(input, output, session) {
         ))
         
         DT::datatable(sp_all_tracks_df()%>%
-                        select(!Track_uri),
+                        select(!track_uri),
           colnames = c(ID = 1),
           # add the name
           extensions = c('RowReorder', 'Buttons', 'Select'),
@@ -401,7 +402,7 @@ server <- function(input, output, session) {
             order = list(list(0, 'asc')),
             rowReorder = TRUE,
             dom = 'Bfrtip',
-            buttons = c('colvis', 'selectAll', 'selectNone', 'selectRows'),
+            buttons = c('colvis', 'selectAll', 'selectNone'),
             select = list(style = 'os', items = 'row'),
             rowId = 0
           )
@@ -417,7 +418,7 @@ server <- function(input, output, session) {
   #Rows selector
   sp_selected_my <- reactive({
     # id's of clicked (selected) tracks belonging to logged user
-    sp_all_tracks_df()[input$songs_from_selected_playlist_rows_selected,]$Track_uri
+    sp_all_tracks_df()[input$songs_from_selected_playlist_rows_selected,]$track_uri
   })
   
   observeEvent(input$songs_from_selected_playlist_rows_selected, {
@@ -488,6 +489,56 @@ server <- function(input, output, session) {
     }
   })
   
+  #################################
+  # Copying songs from selected playlist to  an existing playlist
+  #################################
+  
+  observeEvent(input$copy_songs, {
+    message('SP: copy selected tracks from playlists')
+    showModal(modal_ap_copy_songs())
+  })
+  
+  modal_ap_copy_songs <- reactive({
+    modalDialog(
+      title = "Copying song",
+      HTML(
+        "Select to which playlist you would like to copy following playlists songs? <br/>",
+        paste0(sp_selected_my(), collapse = '<br/>'),
+        "<br/>"
+      ),
+      selectizeInput(
+        "sp_add_playlist_selector",
+        label = "Choose playlist",
+        choices = get_playlists_names_uri(r$access_token,
+                                          r$user_id,
+                                          return_only_owned = T)
+      ),
+      
+      easyClose = TRUE,
+      footer = tags$div(
+        actionButton("sp_add_confirm", "Copy selected songs", class = "btn-success")
+      )
+    )
+  })
+  
+  
+  observeEvent(input$sp_add_confirm, {
+    message(
+      'Copying playlists contents from:',
+      paste0(sp_selected_my(), collapse = " "),
+      " to: ",
+      input$sp_add_playlist_selector
+    )
+    removeModal()
+    if (connect_to_api){
+      for (uri in sp_selected_my()) {
+        add_tracks_to_playlist(playlist_id = input$sp_add_playlist_selector, 
+                                    uris=uri,
+                                    authorization = r$access_token)
+      }
+    }
+    refresh(refresh() + 1)
+  })
   
   
   
@@ -696,6 +747,17 @@ server <- function(input, output, session) {
     }
   })
   
+  # When selected more than 1, disable renaming. 
+  observeEvent(ap_selected_my(), {
+    if (length(ap_selected_my()) == 0 || length(ap_selected_my()) > 1 ) {
+      shinyjs::disable("ap_rename_playlist")
+      
+    } else {
+      shinyjs::enable("ap_rename_playlist")
+      
+    }
+  })
+  
   observeEvent(ap_selected_followed(), {
     if (length(ap_selected_followed()) == 0) {
       shinyjs::disable("ap_fork_playlist")
@@ -746,6 +808,37 @@ server <- function(input, output, session) {
     }
     
     
+  })
+  
+  
+  #Rename playlist
+  observeEvent(input$ap_rename_playlist, {
+    message('AP: rename playlist clicked')
+    showModal(modal_ap_rename_playlist())
+  })
+  
+  modal_ap_rename_playlist <- reactive({
+    modalDialog(
+      title = "Rename playlist",
+      HTML(
+        "Input new name for a selected playlist <br/>"
+      ),
+      textInput("ap_rename_playlist_name",label = 'Insert playlist name:'),
+      
+      easyClose = TRUE,
+      footer = tags$div(
+        actionButton("ap_rename_playlist_name_confirm", "Rename playlist", class = "btn-success")
+      )
+    )
+  })
+  
+  observeEvent(input$ap_rename_playlist_name_confirm, {
+    message('AP: Renaming playlist:', input$ap_rename_playlist_name)
+    removeModal()
+    if (connect_to_api){
+      change_playlist_details(playlist_id = ap_selected_my() ,name = input$ap_rename_playlist_name, authorization = r$access_token)
+    }
+    refresh(refresh() + 1)
   })
   
   
