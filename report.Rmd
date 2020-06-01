@@ -115,16 +115,9 @@ playlist_audio_features_sliced %>%
 
 
 ```{r}
-plot_songs3 <- ggplot(playlist_audio_features, aes(x = track.name, 
-                                                   y = track.popularity)) +
-  geom_boxplot(aes(x = track.name, y = track.popularity)) +
-  geom_smooth() +
-  labs(x = "Track Name",
-       y = "Popularity",
-       title = "Distribution plot of Popularity") +
-  scale_color_brewer(palette = "Set3") +
-  theme(legend.position = "none") +
-  coord_flip()+
-  theme_bw()
-plot_songs3
+by_popularity <- playlist_audio_features %>%
+  group_by(track.name, track.popularity) %>%
+  dplyr::summarize(Total = n()) 
+datatable(by_popularity)
+
 ```
