@@ -57,10 +57,10 @@ datatable(name)
 
 ```{r, echo=FALSE}
 library(dplyr)
-playlist_audio_features$track.popularity <- cut(playlist_audio_features$track.popularity, breaks = 5)
+playlist_audio_features$track.popularity <- cut(playlist_audio_features$track.popularity, breaks = 4)
 playlist_audio_features %>%
   ggplot( aes(x=track.popularity ))+
-  geom_bar(width=0.2) +
+  geom_bar(width=0.2,col="grey", fill="springgreen4") +
   coord_flip() +
   scale_x_discrete(name="Popularity")  + theme_gray() 
 ```
@@ -69,10 +69,10 @@ playlist_audio_features %>%
 # How the energy are distribuited
 
 ```{r, echo=FALSE}
-playlist_audio_features$energy <- cut(playlist_audio_features$energy, breaks = 10)
+playlist_audio_features$energy <- cut(playlist_audio_features$energy, breaks = 4)
 playlist_audio_features %>%
   ggplot( aes(x=energy ))+
-  geom_bar(width=0.2) +
+  geom_bar(width=0.2,col="grey", fill="springgreen4") +
   coord_flip() +
   scale_x_discrete(name="Energy")  + theme_gray() 
 ```
@@ -81,12 +81,14 @@ playlist_audio_features %>%
 Lets see the most commum lenght
 
 ```{r, echo=FALSE}
-playlist_audio_features$track.duration_ms <- cut(playlist_audio_features$track.duration_ms, breaks = 10)
-playlist_audio_features %>%
-  ggplot( aes(x=track.duration_ms ))+
-  geom_bar(width=0.2) +
-  coord_flip() +
-  scale_x_discrete(name="Length")  + theme_gray() 
+
+ playlist_audio_features %>%
+      ggplot( aes(y=track.duration_ms/1000))+
+      geom_bar(binwidth=4, col="grey", fill="springgreen4") +
+      coord_flip() +
+      labs(title = "Song Features - Duration") + 
+      theme_bw()
+
 ```
 
 
