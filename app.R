@@ -205,7 +205,7 @@ server <- function(input, output, session) {
   
   # Visualize atributes
   
-  output$myPlot1 <- renderPlot({
+    output$myPlot1 <- renderPlot({
     
     if (is.null(playlist_audio_features_sliced())) {
       return(NULL)
@@ -232,12 +232,11 @@ server <- function(input, output, session) {
     }
     
     playlist_audio_features() %>%
-      mutate(track.popularity = cut(playlist_audio_features()$track.popularity, breaks = 5)) %>%
-      ggplot( aes(x=track.popularity ))+
-      geom_bar(width=0.2) +
+      mutate(track.popularity = cut(playlist_audio_features()$track.popularity, breaks = 4)) %>%
+      ggplot( aes(y=track.popularity))+
+      geom_bar(width=0.4, col="grey", fill="springgreen4") +
       coord_flip() +
-      labs(x = "Values", y = "Popularity",
-           title = "Song Features - Popularity") + 
+      labs(title = "Song Features - Popularity") + 
       theme_bw()
     
   })
@@ -249,12 +248,11 @@ server <- function(input, output, session) {
     }
     
     playlist_audio_features() %>%
-      mutate(energy = cut(playlist_audio_features()$energy, breaks = 10)) %>%
-      ggplot( aes(x=energy ))+
-      geom_bar(width=0.2) +
+      mutate(energy = cut(playlist_audio_features()$energy, breaks = 4)) %>%
+      ggplot( aes(y=energy ))+
+      geom_bar(width=0.4, col="grey", fill="springgreen4") +
       coord_flip() +
-      labs(x = "Values", y = "Energy",
-           title = "Song Features - Energy") + 
+      labs(title = "Song Features - Energy") + 
       theme_bw() 
     
   })
@@ -266,12 +264,10 @@ server <- function(input, output, session) {
     }
     
     playlist_audio_features() %>%
-      mutate(track.duration_ms = cut(playlist_audio_features()$track.duration_ms, breaks = 10)) %>%
-      ggplot( aes(x=track.duration_ms ))+
-      geom_bar(width=0.2) +
+      ggplot( aes(y=track.duration_ms/10000))+
+      geom_bar(binwidth=4, col="grey", fill="springgreen4") +
       coord_flip() +
-      labs(x = "Values", y = "Duration",
-           title = "Song Features - Duration") + 
+      labs(title = "Song Features - Duration") + 
       theme_bw()  
     
   })
@@ -291,26 +287,14 @@ server <- function(input, output, session) {
   })
   
   output$mytable1 <- DT::renderDataTable({
-   
-     if (is.null(playlist_audio_features_sliced())) {
+    
+    if (is.null(playlist_audio_features_sliced())) {
       return(NULL)
-     }
+    }
     
     by_popularity <- playlist_audio_features() %>%
       group_by(track.name, track.popularity) %>%
       dplyr::summarize(Total = n()) 
-    
-  })
-    
-    playlist_audio_features() %>%
-      mutate(track.popularity = cut(playlist_audio_features()$track.popularity, breaks = 5)) %>%
-      ggplot( aes(x = track.name, y = track.popularity)) +
-      geom_boxplot(aes(x = track.name, y = track.popularity)) +
-      labs(x = "Track Name",
-           y = "Popularity",
-           title = "Distribution plot of Popularity") +
-      coord_flip()+
-      theme_bw()
     
   })
   
