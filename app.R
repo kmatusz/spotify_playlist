@@ -264,12 +264,12 @@ server <- function(input, output, session) {
     if (is.null(playlist_audio_features())) {
       return(NULL)
     }
-    
-    playlist_audio_features() %>%
-      ggplot( aes(y=track.duration_ms/1000))+
-      geom_bar(binwidth=4, col="grey", fill="springgreen4") +
+    # browser()
+    playlist_audio_features()%>% mutate(track.duration_ms2 = track.duration_ms/1000/60) %>%
+      ggplot( aes(y=track.duration_ms2))+
+      geom_histogram(col="grey", fill="springgreen4") +
       coord_flip() +
-      labs(title = "Song Features - Duration") + 
+      labs(title = "Song Features - Duration", x = 'track duration - mins') + 
       theme_bw()  
     
   })
