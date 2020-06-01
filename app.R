@@ -392,8 +392,12 @@ server <- function(input, output, session) {
           input$playlist_selector
         ))
         
-        DT::datatable(sp_all_tracks_df()%>%
-                        select(!track_uri),
+        DT::datatable(sp_all_tracks_df(),
+                      callback = JS(
+                        "// pass on data to R
+    table.on('row-reorder', function(e, details, changes) {
+        Shiny.onInputChange('table_row_reorder', JSON.stringify(details));
+    });"),
           colnames = c(ID = 1),
           # add the name
           extensions = c('RowReorder', 'Buttons', 'Select'),
@@ -414,6 +418,11 @@ server <- function(input, output, session) {
       }
       
     })
+  
+  observeEvent(input$table_row_reorder, {
+    # Event reorder
+    message(input$table_row_reorder)
+  })
   
   #Rows selector
   sp_selected_my <- reactive({
