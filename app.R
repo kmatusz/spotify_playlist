@@ -264,7 +264,7 @@ server <- function(input, output, session) {
     }
     
     playlist_audio_features() %>%
-      ggplot( aes(y=track.duration_ms/10000))+
+      ggplot( aes(y=track.duration_ms/1000))+
       geom_bar(binwidth=4, col="grey", fill="springgreen4") +
       coord_flip() +
       labs(title = "Song Features - Duration") + 
