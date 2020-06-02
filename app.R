@@ -269,7 +269,7 @@ server <- function(input, output, session) {
       ggplot( aes(y=track.duration_ms2))+
       geom_histogram(col="grey", fill="springgreen4") +
       coord_flip() +
-      labs(title = "Song Features - Duration", x = 'track duration - mins') + 
+      labs(title = "Song Features - Duration", x = 'count', y = 'track duration - mins') + 
       theme_bw()  
     
   })
@@ -328,13 +328,14 @@ server <- function(input, output, session) {
       env_to_rmd <- new.env()
       env_to_rmd$playlist_audio_features <-
         my_playlists_audio_features()
-      
+      withProgress(message = 'Generating report', value = 0, {
       rmarkdown::render(
         path_to_file,
         output_file = file,
         params = params,
         envir = env_to_rmd
       )
+      })
     }
   )
   
