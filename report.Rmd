@@ -59,7 +59,7 @@ datatable(name)
 library(dplyr)
 playlist_audio_features$track.popularity <- cut(playlist_audio_features$track.popularity, breaks = 4)
 playlist_audio_features %>%
-  ggplot( aes(x=track.popularity ))+
+  ggplot( aes(y=track.popularity ))+
   geom_bar(width=0.2,col="grey", fill="springgreen4") +
   coord_flip() +
   scale_x_discrete(name="Popularity")  + theme_gray() 
@@ -71,7 +71,7 @@ playlist_audio_features %>%
 ```{r, echo=FALSE}
 playlist_audio_features$energy <- cut(playlist_audio_features$energy, breaks = 4)
 playlist_audio_features %>%
-  ggplot( aes(x=energy ))+
+  ggplot( aes(y=energy ))+
   geom_bar(width=0.2,col="grey", fill="springgreen4") +
   coord_flip() +
   scale_x_discrete(name="Energy")  + theme_gray() 
@@ -82,11 +82,11 @@ Lets see the most commum lenght
 
 ```{r, echo=FALSE}
 
- playlist_audio_features %>%
-      ggplot( aes(y=track.duration_ms/1000))+
-      geom_bar(binwidth=4, col="grey", fill="springgreen4") +
+ playlist_audio_features%>% mutate(track.duration_ms2 = track.duration_ms/1000/60) %>%
+      ggplot( aes(y=track.duration_ms2))+
+      geom_histogram(col="grey", fill="springgreen4") +
       coord_flip() +
-      labs(title = "Song Features - Duration") + 
+      labs(title = "Song Features - Duration", x = 'track duration - mins') + 
       theme_bw()
 
 ```
