@@ -94,7 +94,7 @@ Lets see the most commum lenght
 
 # Correlation between atribiutes of song 
 
-```{r}
+```{r, echo=FALSE}
 options(repr.plot.width = 20, repr.plot.height = 15)
 
 corr <- cor(playlist_audio_features_sliced)
@@ -104,7 +104,7 @@ num <- corrplot(corr, method = "number")
 
 # Histogram for each features
 
-```{r}
+```{r, echo=FALSE}
 playlist_audio_features_sliced %>%
   gather(Features, value, 1:10) %>%
   ggplot(aes(x=value, fill=Features)) +
@@ -116,7 +116,7 @@ playlist_audio_features_sliced %>%
 ```
 
 
-```{r}
+```{r,echo=FALSE}
 by_popularity <- playlist_audio_features %>%
   group_by(track.name, track.popularity) %>%
   dplyr::summarize(Total = n()) 
