@@ -38,11 +38,7 @@ playlist_audio_features_sliced <- playlist_audio_features_sliced[,-2]
 glimpse(playlist_audio_features)
 ```
 
-# Summary and Descriptive Statistics of songs atributes
 
-```{r, echo=FALSE}
-summary(playlist_audio_features_sliced)
-```
 # How many songs of that type do we have in our playlist
 
 ```{r, echo=FALSE}
@@ -57,14 +53,23 @@ datatable(name)
 
 ```{r, echo=FALSE}
 library(dplyr)
-playlist_audio_features$track.popularity <- cut(playlist_audio_features$track.popularity, breaks = 4)
 playlist_audio_features %>%
   ggplot( aes(y=track.popularity ))+
-  geom_bar(width=0.2,col="grey", fill="springgreen4") +
+  geom_histogram(col="grey", fill="springgreen4") +
   coord_flip() +
-  scale_x_discrete(name="Popularity")  + theme_gray() 
+  labs(title = "Song Features - Popularity") + 
+  theme_bw()
 ```
 
+# Song popularities
+
+```{r,echo=FALSE}
+by_popularity <- playlist_audio_features %>%
+  group_by(track.name, track.popularity) %>%
+  dplyr::summarize(Total = n()) 
+datatable(by_popularity)
+
+```
 
 # How the energy are distribuited
 
