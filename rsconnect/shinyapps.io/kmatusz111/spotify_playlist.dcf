@@ -1,0 +1,10 @@
+name: spotify_playlist
+title:
+username:
+account: kmatusz111
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2404543
+bundleId: 3225621
+url: https://kmatusz111.shinyapps.io/spotify_playlist/
+when: 1591223054.8133
