@@ -256,8 +256,8 @@ get_songs_from_playlist_to_display <- function(authorization, playlist_id){
   interesting_cols <-
     c(
       "track.name",
-      "track.artists"
-      
+      "track.artists",
+      "track.uri"
     )
   
   tracks_from_playlist_stripped <- tracks_from_playlist[interesting_cols]
@@ -271,7 +271,7 @@ get_songs_from_playlist_to_display <- function(authorization, playlist_id){
   tracks_from_playlist_stripped$artists_simple <- coerced_artists
   
   tracks_from_playlist_stripped$track.artists <- NULL
-  names(tracks_from_playlist_stripped) <- c("Name", "Artists")
+  names(tracks_from_playlist_stripped) <- c("Name","track_uri","Artists")
   
   tracks_from_playlist_stripped
 }

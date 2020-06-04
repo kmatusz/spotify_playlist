@@ -383,7 +383,7 @@ server <- function(input, output, session) {
           input$playlist_selector
         ))
         
-        DT::datatable(sp_all_tracks_df(),
+        DT::datatable(sp_all_tracks_df() %>% select(!track_uri),
                       callback = JS(
                         "// pass on data to R
     table.on('row-reorder', function(e, details, changes) {
