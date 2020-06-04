@@ -311,7 +311,7 @@ server <- function(input, output, session) {
     downloadButton("report", "Generate report")
   })
   
-  # actual content and knitting the report
+  # actual content and knitting the report12
   output$report <- downloadHandler(
     filename = "report.html",
     content = function(file) {
@@ -683,7 +683,7 @@ server <- function(input, output, session) {
   observeEvent(input$ap_create_new_confirm, {
     message('AP: Creating playlist:', input$ap_new_playlist_name)
     removeModal()
-    if (connect_to_api){
+    if (connect_to_api && input$ap_new_playlist_name != ""){
       create_playlist(r$user_id, name = input$ap_new_playlist_name, authorization = r$access_token)
     }
     refresh(refresh() + 1)
