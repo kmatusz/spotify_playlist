@@ -410,11 +410,30 @@ server <- function(input, output, session) {
       
     })
   
+################################################################################################
   observeEvent(input$table_row_reorder, {
+    #browser()
     # Event reorder
-    message(input$table_row_reorder)
+    message(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[,c("oldData")],]$track_uri)
   })
   
+  new_order <- reactive({
+    as.tibble(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[,c("oldData")],]$track_uri)
+  })
+  
+  observeEvent(input$save_changes, {
+    truncate(input$playlist_selector, r$access_token)
+    
+    for (uri in new_order()$value) {
+      add_tracks_to_playlist(playlist_id = input$playlist_selector, 
+                                  uris=uri,
+                                  authorization = r$access_token)
+    }
+    #shuffle_reorder(playlist_id=input$playlist_selector, track_uris=new_order()$value,authorization=r$access_token)
+    refresh(refresh() + 1)
+  })
+  
+################################################################################################  
   #Rows selector
   sp_selected_my <- reactive({
     # id's of clicked (selected) tracks belonging to logged user
