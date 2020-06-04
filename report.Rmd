@@ -32,12 +32,6 @@ playlist_audio_features_sliced <- playlist_audio_features[, 6:16]
 playlist_audio_features_sliced <- playlist_audio_features_sliced[,-2]
 ```
 
-# Every column in a data frame
-
-```{r, echo=FALSE}
-glimpse(playlist_audio_features)
-```
-
 
 # How many songs of that type do we have in our playlist
 

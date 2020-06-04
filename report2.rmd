@@ -1,0 +1,135 @@
+---
+title: "Spotify playlist report"
+output:
+  html_document: default
+  word_document: default
+---
+```{r setup, include=FALSE}
+library(GGally)
+library(wordcloud2) 
+library(forcats)
+library(data.table)
+library(tidyverse)
+library(plotly)
+library(viridis)
+library(hrbrthemes)
+library(corrplot)
+library(DT)
+library(ggthemes)
+library(ggrepel)
+```
+
+```{r, echo=FALSE}
+source("funs.R")
+
+# Check if markdown document is knitted from the app - if not, source playlist_features_poc.R to obtain features
+if(!exists('playlist_audio_features')){
+  # source("playlist_features_poc.R")
+  load('playlist_audio_features.Rdata')
+}
+
+playlist_audio_features_sliced <- playlist_audio_features[, 6:16]
+playlist_audio_features_sliced <- playlist_audio_features_sliced[,-2]
+```
+
+# Every column in a data frame
+
+```{r, echo=FALSE}
+glimpse(playlist_audio_features)
+```
+
+# Summary and Descriptive Statistics of songs atributes
+
+```{r, echo=FALSE}
+summary(playlist_audio_features_sliced)
+```
+# How many songs of that type do we have in our playlist
+
+```{r, echo=FALSE}
+  name <- playlist_audio_features %>%
+  group_by(playlist_name, track.name, track.album.name) %>%
+  dplyr::summarize(Total = n()) 
+datatable(name)
+```
+
+
+# How the popularities are distribuited
+
+```{r, echo=FALSE}
+library(dplyr)
+playlist_audio_features$track.popularity <- cut(playlist_audio_features$track.popularity, breaks = 5)
+playlist_audio_features %>%
+  ggplot( aes(x=track.popularity ))+
+  geom_bar(width=0.2) +
+  coord_flip() +
+  scale_x_discrete(name="Popularity")  + theme_gray() 
+```
+
+
+# How the energy are distribuited
+
+```{r, echo=FALSE}
+playlist_audio_features$energy <- cut(playlist_audio_features$energy, breaks = 10)
+playlist_audio_features %>%
+  ggplot( aes(x=energy ))+
+  geom_bar(width=0.2) +
+  coord_flip() +
+  scale_x_discrete(name="Energy")  + theme_gray() 
+```
+
+# How the song's lenght are distribuited
+Lets see the most commum lenght
+
+```{r, echo=FALSE}
+playlist_audio_features$track.duration_ms <- cut(playlist_audio_features$track.duration_ms, breaks = 10)
+playlist_audio_features %>%
+  ggplot( aes(x=track.duration_ms ))+
+  geom_bar(width=0.2) +
+  coord_flip() +
+  scale_x_discrete(name="Length")  + theme_gray() 
+```
+
+
+# Correlation between atribiutes of song 
+
+```{r}
+options(repr.plot.width = 20, repr.plot.height = 15)
+
+corr <- cor(playlist_audio_features_sliced)
+
+num <- corrplot(corr, method = "number")
+```
+
+# Histogram for each features
+
+```{r}
+playlist_audio_features_sliced %>%
+  gather(Features, value, 1:10) %>%
+  ggplot(aes(x=value, fill=Features)) +
+  geom_histogram(colour="black", show.legend=FALSE) +
+  facet_wrap(~Features, scales="free_x") +
+  labs(x="Values", y="Frequency",
+       title="Song Features - Histograms") +
+  theme_bw()
+```
+
+
+```{r}
+ggplot(data = playlist_audio_features %>%
+                select(track.name, track.popularity, speechiness, energy, acousticness)%>%
+                group_by(track.name)%>%
+                mutate(mean_pop = mean(track.popularity, na.rm = TRUE),
+                       count_n = n())%>%
+                filter(count_n > 1)%>%
+                arrange(desc(mean_pop))%>%
+                head(10),
+       aes(x = speechiness, y = mean_pop, col = acousticness, size = energy)
+)+
+  geom_point()+
+  theme( axis.line = element_line(),
+        axis.text = element_text(colour = "black"))+
+  ggtitle("Most Popular Track")+
+  ylab("Mean Popularity") +
+  xlab("Speechiness")+
+  facet_grid(~track.name)
+```

@@ -146,6 +146,7 @@ server <- function(input, output, session) {
   # select for currently shown playlist
   output$report_dynamic_playlist_selector <- renderUI({
     if (r$AUTHORIZED) {
+      refresh()
       selectizeInput(
         "report_playlist_selector",
         label = "Choose playlist for which you want to see the visualisation",
@@ -345,6 +346,7 @@ server <- function(input, output, session) {
   
   output$dynamic_playlist_selector <- renderUI({
     if (r$AUTHORIZED) {
+      refresh()
       selectizeInput(
         "playlist_selector",
         label = "Choose playlist",
@@ -497,7 +499,7 @@ server <- function(input, output, session) {
 
   observeEvent(public_playlist_button_disable(), {
     current = get_my_playlists( authorization = r$access_token) %>% filter(id == public_playlist_button_disable())
-    if (current$owner.id != r$user_id) {
+    if (current$owner.id != r$user_id && length(current$owner.id) != 0) {
       shinyjs::disable("delete_songs")
       shinyjs::disable("save_changes")
 
