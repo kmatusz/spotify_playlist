@@ -428,22 +428,11 @@ server <- function(input, output, session) {
   
 
 ################################################################################################
-  observeEvent(input$table_row_reorder, {
-    #browser()
-    # Event reorder
-    reorded <- jsonlite::fromJSON(input$table_row_reorder)
-    if(length(reorded)==0){
-      return(NULL)
-    } 
-    message(
-      full_join(as.tibble(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[, c("oldData")], ]$track_uri),
-                         anti_join(
-                           as.tibble(sp_all_tracks_df()$track_uri),
-                           as.tibble(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[, c("oldData")], ]$track_uri)
-                         )))
-  })
+
   
   new_order <- reactive({
+    # browser()
+    if(is.null(input$table_row_reorder)) return(NULL)
     reorded <- jsonlite::fromJSON(input$table_row_reorder)
     if(length(reorded)==0){
       return(NULL)
@@ -459,6 +448,7 @@ server <- function(input, output, session) {
     if(is.null(new_order())){
       return(NULL)
     }
+    # browser()
     
     truncate(input$playlist_selector, r$access_token)
     
