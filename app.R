@@ -369,7 +369,7 @@ server <- function(input, output, session) {
                                             playlist_id = input$playlist_selector)
     
   })
-  
+ 
   sp_all_tracks_df <- reactive({
     if (!r$AUTHORIZED) {
       return(NULL)
@@ -384,8 +384,8 @@ server <- function(input, output, session) {
           "Run rendering of songs for playlist: ",
           input$playlist_selector
         ))
-        
-        DT::datatable(sp_all_tracks_df() %>% select(!track_uri),
+        #browser()
+        DT::datatable(tryCatch(sp_all_tracks_df() %>% select(!contains("track_uri"))),
                       callback = JS(
                         "// pass on data to R
     table.on('row-reorder', function(e, details, changes) {
@@ -412,15 +412,24 @@ server <- function(input, output, session) {
       
     })
   
+  
+  observeEvent(input$playlist_selector, {
+
+    message(sp_all_tracks_df())
+  })
 ################################################################################################
   observeEvent(input$table_row_reorder, {
-    #browser()
+    browser()
     # Event reorder
-    message(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[,c("oldData")],]$track_uri)
+    message(typeof(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[,c("oldData")],]$track_uri))
   })
   
   new_order <- reactive({
-    as.tibble(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[,c("oldData")],]$track_uri)
+    full_join(as.tibble(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[, c("oldData")], ]$track_uri),
+              anti_join(
+                as.tibble(sp_all_tracks_df()$track_uri),
+                as.tibble(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[, c("oldData")], ]$track_uri)
+              ))
   })
   
   observeEvent(input$save_changes, {
