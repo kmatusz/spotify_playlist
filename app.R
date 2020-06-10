@@ -177,14 +177,28 @@ server <- function(input, output, session) {
       return(NULL)
     }
     withProgress(message = 'Obtaining songs features', value = 0, {
-      get_audio_features_for_playlists(r$access_token, playlist_id = report_playlist_selector())
+      a <- get_audio_features_for_playlists(r$access_token, playlist_id = report_playlist_selector())
     })
+    
+    # browser()
+    if (nrow(a)==0){
+      return(NULL)
+    }
+    a
+    
   })
   
   playlist_audio_features_sliced <- reactive({
     if (is.null(my_playlists_audio_features())) {
       return(NULL)
     }
+    
+    if (nrow(my_playlists_audio_features())==0) {
+      return(NULL)
+    }
+    
+    
+    browser()
     playlist_audio_features_sliced <-
       my_playlists_audio_features()[, 6:16]
     playlist_audio_features_sliced <-
