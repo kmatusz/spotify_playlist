@@ -426,19 +426,28 @@ server <- function(input, output, session) {
       
     })
   
-  
-  observeEvent(input$playlist_selector, {
 
-    message(sp_all_tracks_df())
-  })
 ################################################################################################
   observeEvent(input$table_row_reorder, {
-    browser()
+    #browser()
     # Event reorder
-    message(typeof(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[,c("oldData")],]$track_uri))
+    reorded <- jsonlite::fromJSON(input$table_row_reorder)
+    if(length(reorded)==0){
+      return(NULL)
+    } 
+    message(
+      full_join(as.tibble(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[, c("oldData")], ]$track_uri),
+                         anti_join(
+                           as.tibble(sp_all_tracks_df()$track_uri),
+                           as.tibble(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[, c("oldData")], ]$track_uri)
+                         )))
   })
   
   new_order <- reactive({
+    reorded <- jsonlite::fromJSON(input$table_row_reorder)
+    if(length(reorded)==0){
+      return(NULL)
+    } 
     full_join(as.tibble(sp_all_tracks_df()[jsonlite::fromJSON(input$table_row_reorder)[, c("oldData")], ]$track_uri),
               anti_join(
                 as.tibble(sp_all_tracks_df()$track_uri),
@@ -447,6 +456,10 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$save_changes, {
+    if(is.null(new_order())){
+      return(NULL)
+    }
+    
     truncate(input$playlist_selector, r$access_token)
     
     for (uri in new_order()$value) {
